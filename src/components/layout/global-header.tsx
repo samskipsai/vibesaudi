@@ -78,10 +78,8 @@ export function GlobalHeader() {
 							<div></div>
 						)}
 
-
-
 						{/* Right section */}
-						
+						<div className="flex items-center gap-2">
 							{/* Disable cost display for now */}
 							{/* {user && (
 							<CostDisplay
@@ -92,7 +90,7 @@ export function GlobalHeader() {
 						)} */}
 							<ThemeToggle />
 							<AuthButton />
-						</motion.div>
+						</div>
 					</div>
 				</div>
 			</motion.header>
