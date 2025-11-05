@@ -6,16 +6,6 @@ export function CloudflareLogo(props: React.SVGProps<SVGSVGElement> & { color1?:
 			fill="none"
 			{...props}
 		>
-			<defs>
-				<linearGradient 
-					id="gradient" 
-					gradientTransform="rotate(45 0.5 0.5)"
-				>
-					<stop offset="0%" stopColor={props.color1 ?? "#f99610"} />
-					<stop offset="100%" stopColor={props.color2 ?? "#d71527"} />
-				</linearGradient>
-			</defs>
-			<rect width="200" height="200" fill="url('#gradient')" />
 			<path
 				fill="#174840"
 				stroke="#3a7671"
