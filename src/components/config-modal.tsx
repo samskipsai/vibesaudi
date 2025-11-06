@@ -328,11 +328,9 @@ export function ConfigModal({
               </div>
               <Button variant="outline" size="sm" 
               onClick={openByokModal}
-              disabled // DISABLED: BYOK Disabled for security reasons
               className="gap-2">
                 <Key className="h-4 w-4" />
-                {/* Manage Keys */}
-                Coming Soon
+                Manage Keys
               </Button>
             </div>
             
