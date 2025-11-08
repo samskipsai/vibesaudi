@@ -256,6 +256,7 @@ export interface ModelTestRequest {
     modelConfig: ModelConfig;
     userApiKeys?: Record<string, string>;
     testPrompt?: string;
+    userId: string; // User ID for BYOK key lookup
 }
 
 /**

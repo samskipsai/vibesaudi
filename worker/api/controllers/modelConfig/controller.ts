@@ -293,7 +293,8 @@ export class ModelConfigController extends BaseController {
             const testResult = await modelTestService.testModelConfig({
                 modelConfig: configToTest,
                 userApiKeys,
-                testPrompt: validatedData.testPrompt
+                testPrompt: validatedData.testPrompt,
+                userId: user.id // Pass user ID for BYOK key lookup
             });
 
             const responseData: ModelConfigTestData = {

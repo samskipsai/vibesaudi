@@ -17,7 +17,8 @@ export class ModelTestService extends BaseService {
     async testModelConfig({
         modelConfig,
         userApiKeys,
-        testPrompt = "Hello! Please respond with 'Test successful' to confirm the connection is working."
+        testPrompt = "Hello! Please respond with 'Test successful' to confirm the connection is working.",
+        userId
     }: ModelTestRequest): Promise<ModelTestResult> {
         const startTime = Date.now();
         const modelName: string = modelConfig.name;
@@ -29,7 +30,7 @@ export class ModelTestService extends BaseService {
             // Use core inference system to test the model configuration
             const response = await infer({
                 env: this.env,
-                metadata: { agentId: `test-${Date.now()}`, userId: 'system' }, // Generate unique test ID
+                metadata: { agentId: `test-${Date.now()}`, userId: userId }, // Use actual user ID for BYOK key lookup
                 messages: [testMessage],
                 modelName: modelName,
                 maxTokens: Math.min(modelConfig.max_tokens || 100, 100), // Limit to 100 tokens for test
@@ -86,8 +87,11 @@ export class ModelTestService extends BaseService {
 
     /**
      * Test a specific provider's API key using core inference
+     * @param provider - The provider name (e.g., 'openai', 'anthropic')
+     * @param apiKey - The API key to test
+     * @param userId - Optional user ID for BYOK key lookup. If not provided, uses 'system'
      */
-    async testProviderKey(provider: string, apiKey: string): Promise<TestResult> {
+    async testProviderKey(provider: string, apiKey: string, userId: string = 'system'): Promise<TestResult> {
         const startTime = Date.now();
 
         try {
@@ -108,9 +112,10 @@ export class ModelTestService extends BaseService {
             const testMessage = createUserMessage('Test connection. Please respond with "OK".');
 
             // Use core inference system to test the provider key
+            // Note: Even though we pass userApiKeys, getConfigurationForModel still uses userId for BYOK lookup
             const response = await infer({
                 env: this.env,
-                metadata: { agentId: `provider-test-${Date.now()}`, userId: 'system' }, // Generate unique test ID
+                metadata: { agentId: `provider-test-${Date.now()}`, userId: userId }, // Use provided userId for BYOK key lookup
                 messages: [testMessage],
                 modelName: testModel,
                 maxTokens: 10,
