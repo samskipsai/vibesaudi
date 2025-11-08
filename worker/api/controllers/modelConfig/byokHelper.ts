@@ -70,13 +70,21 @@ export function getByokModels(
 	providerStatuses
 		.filter((status) => status.hasValidKey)
 		.forEach((status) => {
-			// Get models for this provider dynamically from AIModels enum
-			const providerModels = Object.values(AIModels).filter((model) =>
-				model.startsWith(`${status.provider}/`),
-			);
+			// Special handling for OpenRouter - it's a gateway that can access models from any provider
+			if (status.provider === 'openrouter') {
+				// OpenRouter can access models from all providers, so return all available models
+				modelsByProvider[status.provider] = Object.values(AIModels).filter(
+					(model) => model !== AIModels.DISABLED
+				);
+			} else {
+				// Get models for this provider dynamically from AIModels enum
+				const providerModels = Object.values(AIModels).filter((model) =>
+					model.startsWith(`${status.provider}/`),
+				);
 
-			if (providerModels.length > 0) {
-				modelsByProvider[status.provider] = providerModels;
+				if (providerModels.length > 0) {
+					modelsByProvider[status.provider] = providerModels;
+				}
 			}
 		});
 
