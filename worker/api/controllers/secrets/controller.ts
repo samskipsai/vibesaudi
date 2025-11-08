@@ -118,8 +118,18 @@ export class SecretsController extends BaseController {
 
             return SecretsController.createSuccessResponse(responseData);
         } catch (error) {
-            this.logger.error('Error storing secret:', error);
-            return SecretsController.createErrorResponse<SecretStoreData>('Failed to store secret', 500);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error('Error storing secret:', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+            
+            // Provide more helpful error message to user
+            let userMessage = 'Failed to store secret';
+            if (errorMessage.includes('SECRETS_ENCRYPTION_KEY')) {
+                userMessage = 'Server configuration error: Encryption key not configured. Please contact support.';
+            } else if (errorMessage.includes('encrypt')) {
+                userMessage = `Encryption failed: ${errorMessage}`;
+            }
+            
+            return SecretsController.createErrorResponse<SecretStoreData>(userMessage, 500);
         }
     }
 

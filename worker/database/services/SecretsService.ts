@@ -40,7 +40,16 @@ export class SecretsService extends BaseService {
             combined.set(nonce, salt.length);
             combined.set(encrypted, salt.length + nonce.length);
             
-            const encryptedValue = btoa(String.fromCharCode(...combined));
+            // Convert to base64 using chunked approach to avoid stack overflow with large arrays
+            const CHUNK_SIZE = 8192;
+            let binaryString = '';
+            for (let i = 0; i < combined.length; i += CHUNK_SIZE) {
+                const chunk = combined.slice(i, i + CHUNK_SIZE);
+                for (let j = 0; j < chunk.length; j++) {
+                    binaryString += String.fromCharCode(chunk[j]);
+                }
+            }
+            const encryptedValue = btoa(binaryString);
             
             // Create preview (first 4 + last 4 characters, masked middle)
             const keyPreview = value.length > 8 
@@ -49,8 +58,9 @@ export class SecretsService extends BaseService {
             
             return { encryptedValue, keyPreview };
         } catch (error) {
-            this.logger.error('Error encrypting secret:', error);
-            throw new Error('Failed to encrypt secret');
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error('Error encrypting secret:', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+            throw new Error(`Failed to encrypt secret: ${errorMessage}`);
         }
     }
 
@@ -63,10 +73,12 @@ export class SecretsService extends BaseService {
                 throw new Error('SECRETS_ENCRYPTION_KEY environment variable not set');
             }
 
-            // Decode the base64 encrypted data
-            const combined = new Uint8Array(
-                Array.from(atob(encryptedValue), c => c.charCodeAt(0))
-            );
+            // Decode the base64 encrypted data using chunked approach
+            const binaryString = atob(encryptedValue);
+            const combined = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                combined[i] = binaryString.charCodeAt(i);
+            }
             
             // Extract salt (first 16 bytes), nonce (next 24 bytes) and encrypted data (rest)
             const salt = combined.slice(0, 16);
