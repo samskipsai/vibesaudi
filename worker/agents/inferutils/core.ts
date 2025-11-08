@@ -494,6 +494,18 @@ export async function infer<OutputSchema extends z.AnyZodObject>({
 
         // Remove [*.] from model name
         modelName = modelName.replace(/\[.*?\]/, '');
+        
+        // When using direct provider URLs (BYOK), strip the provider prefix from model name
+        // e.g., "openai/gpt-5" -> "gpt-5" for direct OpenAI API calls
+        const isDirectProviderUrl = Object.values(PROVIDER_DIRECT_URLS).includes(baseURL);
+        if (isDirectProviderUrl && modelName.includes('/')) {
+            const providerPrefix = modelName.split('/')[0];
+            // Only strip if it matches a known provider
+            if (PROVIDER_DIRECT_URLS[providerPrefix]) {
+                modelName = modelName.split('/').slice(1).join('/');
+                console.log(`Stripped provider prefix, using model name: ${modelName}`);
+            }
+        }
 
         const client = new OpenAI({ apiKey, baseURL: baseURL, defaultHeaders });
         const schemaObj =
