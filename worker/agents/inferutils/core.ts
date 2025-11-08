@@ -252,6 +252,15 @@ async function getApiKey(provider: string, env: Env, userId: string): Promise<st
     return apiKey;
 }
 
+// Direct provider API URLs for BYOK keys (bypass AI Gateway)
+const PROVIDER_DIRECT_URLS: Record<string, string> = {
+    'openai': 'https://api.openai.com/v1',
+    'anthropic': 'https://api.anthropic.com/v1',
+    'google-ai-studio': 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    'openrouter': 'https://openrouter.ai/api/v1',
+    'cerebras': 'https://api.cerebras.ai/v1',
+};
+
 export async function getConfigurationForModel(
     model: AIModels | string, 
     env: Env, 
@@ -287,17 +296,38 @@ export async function getConfigurationForModel(
         providerForcedOverride = provider as AIGatewayProviders;
     }
 
-    const baseURL = await buildGatewayUrl(env, providerForcedOverride);
-
     // Extract the provider name from model name. Model name is of type `provider/model_name`
     const provider = providerForcedOverride || model.split('/')[0];
-    // Try to find API key of type <PROVIDER>_API_KEY else default to CLOUDFLARE_AI_GATEWAY_TOKEN
-    // `env` is an interface of type `Env`
+    
+    // Check if user has a BYOK key for this provider
+    let isByokKey = false;
+    try {
+        const secretsService = new SecretsService(env);
+        const userProviderKeys = await secretsService.getUserBYOKKeysMap(userId);
+        isByokKey = userProviderKeys && userProviderKeys.has(provider) && isValidApiKey(userProviderKeys.get(provider)!);
+    } catch (error) {
+        console.error("Error checking BYOK key:", error);
+    }
+
+    // Get API key
     const apiKey = await getApiKey(provider, env, userId);
+    
+    // If using BYOK key, bypass AI Gateway and use direct provider URL
+    if (isByokKey && PROVIDER_DIRECT_URLS[provider]) {
+        return {
+            baseURL: PROVIDER_DIRECT_URLS[provider],
+            apiKey: apiKey,
+        };
+    }
+
+    // Otherwise, use AI Gateway
+    const baseURL = await buildGatewayUrl(env, providerForcedOverride);
+    
     // AI Gateway Wholesaling checks
     const defaultHeaders = env.CLOUDFLARE_AI_GATEWAY_TOKEN && apiKey !== env.CLOUDFLARE_AI_GATEWAY_TOKEN ? {
         'cf-aig-authorization': `Bearer ${env.CLOUDFLARE_AI_GATEWAY_TOKEN}`,
     } : undefined;
+    
     return {
         baseURL,
         apiKey,
