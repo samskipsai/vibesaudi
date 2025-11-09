@@ -3,7 +3,7 @@
  * Provides common database functionality and patterns for all domain services
  */
 
-/// <reference types="../../worker-configuration" />
+/// <reference path="../../worker-configuration.d.ts" />
 
 import { createDatabaseService, DatabaseService } from '../database';
 import { SQL, and } from 'drizzle-orm';
