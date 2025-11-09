@@ -11,6 +11,7 @@ import {
 import { AgentSummary } from '../../../agents/core/types';
 import { createLogger } from '../../../logger';
 import { buildUserWorkerUrl } from 'worker/utils/urls';
+import type { PlatformServices } from '../../../services/platform-services/PlatformServicesManager';
 
 export class AppViewController extends BaseController {
     static logger = createLogger('AppViewController');
@@ -66,6 +67,19 @@ export class AppViewController extends BaseController {
 
             const cloudflareUrl = appResult.deploymentId ? buildUserWorkerUrl(env, appResult.deploymentId) : '';
 
+            // Parse platform services from JSON if present
+            let platformServices: PlatformServices | null = null;
+            if (appResult.platformServices) {
+                try {
+                    // Drizzle returns JSON fields as parsed objects when mode: 'json' is used
+                    platformServices = typeof appResult.platformServices === 'string' 
+                        ? JSON.parse(appResult.platformServices) 
+                        : appResult.platformServices as PlatformServices;
+                } catch (error) {
+                    this.logger.warn('Failed to parse platform services JSON', { appId, error });
+                }
+            }
+
             const responseData: AppDetailsData = {
                 ...appResult, // Spread all EnhancedAppData fields including stats
                 cloudflareUrl: cloudflareUrl,
@@ -76,6 +90,7 @@ export class AppViewController extends BaseController {
                     avatarUrl: appResult.userAvatar
                 },
                 agentSummary,
+                platformServices,
             };
 
             return AppViewController.createSuccessResponse(responseData);

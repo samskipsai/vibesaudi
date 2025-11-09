@@ -5,6 +5,7 @@
 
 import { AgentSummary } from '../../../agents/core/types';
 import { EnhancedAppData } from '../../../database/types';
+import type { PlatformServices } from '../../../services/platform-services/PlatformServicesManager';
 
 /**
  * Generated code file structure
@@ -28,6 +29,7 @@ export interface AppDetailsData extends EnhancedAppData {
         avatarUrl: string | null;
     };
     agentSummary: AgentSummary | null;
+    platformServices?: PlatformServices | null; // Parsed platform services from JSON
 }
 
 /**

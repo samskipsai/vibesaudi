@@ -174,6 +174,9 @@ export const apps = sqliteTable('apps', {
     screenshotUrl: text('screenshot_url'), // URL to saved screenshot image
     screenshotCapturedAt: integer('screenshot_captured_at', { mode: 'timestamp' }), // When screenshot was last captured
     
+    // Platform Services (D1, R2, etc.)
+    platformServices: text('platform_services', { mode: 'json' }), // JSON object storing provisioned platform services
+    
     // Metadata
     createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`CURRENT_TIMESTAMP`),

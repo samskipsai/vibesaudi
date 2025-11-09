@@ -247,13 +247,15 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             framework: this.state.blueprint.frameworks?.[0],
             visibility: 'private',
             status: 'generating',
+            platformServices: this.state.platformServices ? JSON.stringify(this.state.platformServices) : null,
             createdAt: new Date(),
             updatedAt: new Date()
         });
         this.logger().info(`App saved successfully to database for agent ${this.state.inferenceContext.agentId}`, { 
             agentId: this.state.inferenceContext.agentId, 
             userId: this.state.inferenceContext.userId,
-            visibility: 'private'
+            visibility: 'private',
+            hasPlatformServices: !!this.state.platformServices
         });
         this.logger().info(`Agent initialized successfully for agent ${this.state.inferenceContext.agentId}`);
     }

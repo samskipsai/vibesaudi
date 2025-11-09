@@ -22,6 +22,7 @@ import {
 	Globe,
 	Trash2,
 	Github,
+	Database,
 } from 'lucide-react';
 import { MonacoEditor } from '@/components/monaco-editor/monaco-editor';
 import { getFileType } from '@/utils/string';
@@ -43,6 +44,7 @@ import { capitalizeFirstLetter, cn, getPreviewUrl } from '@/lib/utils';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { PreviewIframe } from '../chat/components/preview-iframe';
+import { PlatformServicesView } from './components/platform-services';
 
 // Use proper types from API types
 type AppDetails = AppDetailsData;
@@ -748,6 +750,18 @@ export default function AppView() {
 							)} />
 							Prompt
 						</TabsTrigger>
+						{(app?.platformServices?.database || app?.platformServices?.storage) && (
+							<TabsTrigger 
+								value="services" 
+								className="px-3 py-1.5 rounded text-xs font-medium data-[state=active]:bg-bg-4 dark:data-[state=active]:bg-bg-3 data-[state=active]:text-text-primary data-[state=active]:shadow-sm"
+							>
+								<Database className={cn(
+									"h-3.5 w-3.5 mr-1.5",
+									activeTab === 'services' ? 'text-accent' : 'text-accent/60'
+								)} />
+								Services
+							</TabsTrigger>
+						)}
 					</TabsList>
 
 					<TabsContent value="preview" className="flex-1">
@@ -1061,6 +1075,15 @@ export default function AppView() {
 							</CardContent>
 						</Card>
 					</TabsContent>
+
+					{(app?.platformServices?.database || app?.platformServices?.storage) && (
+						<TabsContent
+							value="services"
+							className="flex-1"
+						>
+							<PlatformServicesView services={app.platformServices} />
+						</TabsContent>
+					)}
 				</Tabs>
 			</div>
 
