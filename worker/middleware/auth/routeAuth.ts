@@ -229,14 +229,24 @@ export async function checkAppOwnership(user: AuthUser, params: Record<string, s
     try {
         const agentId = params.agentId || params.id;
         if (!agentId) {
+            logger.warn('No agentId found in params for ownership check', { params, userId: user.id });
             return false;
         }
 
+        logger.info('Checking app ownership', { agentId, userId: user.id, params });
         const appService = new AppService(env);
         const ownershipResult = await appService.checkAppOwnership(agentId, user.id);
+        
+        logger.info('App ownership check result', { 
+            agentId, 
+            userId: user.id, 
+            exists: ownershipResult.exists,
+            isOwner: ownershipResult.isOwner 
+        });
+        
         return ownershipResult.isOwner;
     } catch (error) {
-        logger.error('Error checking app ownership', error);
+        logger.error('Error checking app ownership', { error, userId: user.id, params });
         return false;
     }
 }

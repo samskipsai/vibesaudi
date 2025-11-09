@@ -415,12 +415,24 @@ export class AppService extends BaseService {
             .get();
 
         if (!app) {
+            this.logger.warn('App not found for ownership check', { appId, userId });
             return { exists: false, isOwner: false };
         }
 
+        // Check ownership: app.userId must match userId, and both must be non-null
+        const isOwner = app.userId !== null && app.userId === userId;
+        
+        this.logger.info('Ownership check result', { 
+            appId, 
+            userId, 
+            appUserId: app.userId, 
+            isOwner,
+            match: app.userId === userId
+        });
+
         return {
             exists: true,
-            isOwner: app.userId === userId
+            isOwner
         };
     }
 
