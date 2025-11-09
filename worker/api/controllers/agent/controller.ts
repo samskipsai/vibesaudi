@@ -14,6 +14,8 @@ import { createLogger } from '../../../logger';
 import { getPreviewDomain } from 'worker/utils/urls';
 import { ImageType, uploadImage } from 'worker/utils/images';
 import { ProcessedImageAttachment } from 'worker/types/image-attachment';
+import { AppService } from '../../../database/services/AppService';
+import { PlatformServicesManager, type PlatformServices } from '../../../services/platform-services/PlatformServicesManager';
 
 const defaultCodeGenArgs: CodeGenArgs = {
     query: '',
@@ -111,6 +113,56 @@ export class CodingAgentController extends BaseController {
             });
 
             const { sandboxSessionId, templateDetails, selection } = await getTemplateForQuery(env, inferenceContext, query, body.images, this.logger);
+
+            // Provision platform services if requested (before saving app)
+            let platformServices: PlatformServices | undefined;
+            if (body.services && (body.services.includeDatabase || body.services.includeStorage)) {
+                try {
+                    const platformServicesManager = new PlatformServicesManager(env);
+                    platformServices = await platformServicesManager.provisionServicesForApp(
+                        agentId,
+                        user.id,
+                        body.services
+                    );
+                    this.logger.info('Platform services provisioned in controller', {
+                        agentId,
+                        database: !!platformServices.database,
+                        storage: !!platformServices.storage,
+                    });
+                } catch (error) {
+                    this.logger.error('Failed to provision platform services in controller', error);
+                    // Continue without services - don't block app creation
+                }
+            }
+
+            // Save app to database IMMEDIATELY before returning WebSocket URL
+            // This ensures the app exists for ownership checks when WebSocket connects
+            try {
+                const appService = new AppService(env);
+                await appService.createApp({
+                    id: agentId,
+                    userId: user.id,
+                    sessionToken: null,
+                    title: query.substring(0, 100), // Temporary title, will be updated with blueprint
+                    description: null,
+                    originalPrompt: query,
+                    finalPrompt: query,
+                    framework: null, // Will be updated with blueprint
+                    visibility: 'private',
+                    status: 'generating',
+                    platformServices: platformServices ? JSON.stringify(platformServices) : null,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+                this.logger.info('App saved to database before WebSocket connection', { 
+                    agentId, 
+                    userId: user.id,
+                    hasPlatformServices: !!platformServices
+                });
+            } catch (error) {
+                this.logger.error('Failed to save app to database in controller', error);
+                // Continue - we'll try again in initialize(), but ownership checks may fail
+            }
 
             const websocketUrl = `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}/api/agent/${agentId}/ws`;
             const httpStatusUrl = `${url.origin}/api/agent/${agentId}`;

@@ -40,6 +40,8 @@ import { looksLikeCommand } from '../utils/common';
 import { generateBlueprint } from '../planning/blueprint';
 import { prepareCloudflareButton } from '../../utils/deployToCf';
 import { AppService } from '../../database';
+import * as schema from '../../database/schema';
+import { eq } from 'drizzle-orm';
 import { RateLimitExceededError } from 'shared/types/errors';
 import { generateId } from 'worker/utils/idGenerator';
 import { ImageAttachment, type ProcessedImageAttachment } from '../../types/image-attachment';
@@ -235,30 +237,54 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
     /**
      * Save minimal app record early (before blueprint generation)
      * This ensures the app exists in the database for ownership checks
+     * Note: App is now saved in the controller before WebSocket connection,
+     * but this method is kept as a fallback and for idempotency
      */
     async saveAppEarly(query: string, platformServices?: PlatformServices) {
         this.logger().info(`Saving app early for agent ${this.getAgentId()}`);
         const appService = new AppService(this.env);
-        await appService.createApp({
-            id: this.state.inferenceContext.agentId,
-            userId: this.state.inferenceContext.userId,
-            sessionToken: null,
-            title: query.substring(0, 100), // Temporary title, will be updated with blueprint
-            description: null,
-            originalPrompt: query,
-            finalPrompt: query,
-            framework: null, // Will be updated with blueprint
-            visibility: 'private',
-            status: 'generating',
-            platformServices: platformServices ? JSON.stringify(platformServices) : null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
-        this.logger().info(`App saved early to database for agent ${this.state.inferenceContext.agentId}`, { 
-            agentId: this.state.inferenceContext.agentId, 
-            userId: this.state.inferenceContext.userId,
-            hasPlatformServices: !!platformServices
-        });
+        
+        // Check if app already exists (it should, since controller saves it first)
+        const existingApp = await appService.getAppDetails(this.state.inferenceContext.agentId, this.state.inferenceContext.userId);
+        if (existingApp) {
+            this.logger().info(`App already exists, skipping early save`, { 
+                agentId: this.state.inferenceContext.agentId 
+            });
+            return;
+        }
+        
+        // App doesn't exist, create it (fallback case)
+        try {
+            await appService.createApp({
+                id: this.state.inferenceContext.agentId,
+                userId: this.state.inferenceContext.userId,
+                sessionToken: null,
+                title: query.substring(0, 100), // Temporary title, will be updated with blueprint
+                description: null,
+                originalPrompt: query,
+                finalPrompt: query,
+                framework: null, // Will be updated with blueprint
+                visibility: 'private',
+                status: 'generating',
+                platformServices: platformServices ? JSON.stringify(platformServices) : null,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+            this.logger().info(`App saved early to database for agent ${this.state.inferenceContext.agentId}`, { 
+                agentId: this.state.inferenceContext.agentId, 
+                userId: this.state.inferenceContext.userId,
+                hasPlatformServices: !!platformServices
+            });
+        } catch (error) {
+            // If app already exists (race condition), that's fine
+            if (error instanceof Error && error.message.includes('UNIQUE constraint')) {
+                this.logger().info(`App already exists (race condition), continuing`, { 
+                    agentId: this.state.inferenceContext.agentId 
+                });
+            } else {
+                throw error;
+            }
+        }
     }
 
     /**
@@ -293,9 +319,36 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         const { query, language, frameworks, hostname, inferenceContext, templateInfo, sandboxSessionId, services } = initArgs;
         this.initLogger(inferenceContext.agentId, sandboxSessionId, inferenceContext.userId);
         
-        // Provision platform services if requested
-        let platformServices;
-        if (services && (services.includeDatabase || services.includeStorage)) {
+        // Check if app already has platform services (provisioned in controller)
+        // If not, provision them now (fallback case)
+        let platformServices: PlatformServices | undefined;
+        const appService = new AppService(this.env);
+        
+        // Get raw app from database to check for platform services
+        const readDb = appService['getReadDb']('fast');
+        const appResult = await readDb
+            .select({
+                platformServices: schema.apps.platformServices
+            })
+            .from(schema.apps)
+            .where(eq(schema.apps.id, inferenceContext.agentId))
+            .get();
+        
+        if (appResult?.platformServices) {
+            // App already has platform services from controller, parse them
+            try {
+                platformServices = typeof appResult.platformServices === 'string' 
+                    ? JSON.parse(appResult.platformServices) 
+                    : appResult.platformServices as PlatformServices;
+                this.logger().info('Using existing platform services from database', {
+                    database: !!platformServices?.database,
+                    storage: !!platformServices?.storage,
+                });
+            } catch (error) {
+                this.logger().warn('Failed to parse existing platform services', error);
+            }
+        } else if (services && (services.includeDatabase || services.includeStorage)) {
+            // App doesn't have platform services yet, provision them (fallback case)
             try {
                 const platformServicesManager = new PlatformServicesManager(this.env);
                 platformServices = await platformServicesManager.provisionServicesForApp(
@@ -303,9 +356,15 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                     inferenceContext.userId,
                     services
                 );
-                this.logger().info('Platform services provisioned', {
+                this.logger().info('Platform services provisioned in initialize (fallback)', {
                     database: !!platformServices.database,
                     storage: !!platformServices.storage,
+                });
+                
+                // Update app with provisioned services
+                await appService.updateApp(inferenceContext.agentId, {
+                    platformServices: JSON.stringify(platformServices),
+                    updatedAt: new Date()
                 });
             } catch (error) {
                 this.logger().error('Failed to provision platform services', error);
@@ -313,13 +372,13 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             }
         }
         
-        // Save app early to database (before blueprint generation)
-        // This ensures the app exists for ownership checks when WebSocket connects
+        // Save app early to database (before blueprint generation) if it doesn't exist
+        // This is a fallback - app should already exist from controller
         try {
             await this.saveAppEarly(query, platformServices);
         } catch (error) {
             this.logger().error('Failed to save app early', error);
-            // Continue - we'll try again later, but ownership checks may fail
+            // Continue - app should already exist from controller
         }
         
         // Generate a blueprint
