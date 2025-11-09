@@ -3,6 +3,8 @@
  * Provides database connection, core utilities, and base operations∂ƒ
  */
 
+/// <reference types="../worker-configuration" />
+
 import { drizzle } from 'drizzle-orm/d1';
 import * as Sentry from '@sentry/cloudflare';
 import * as schema from './schema';
