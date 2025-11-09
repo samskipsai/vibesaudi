@@ -20,7 +20,7 @@ export interface GeneratedCodeFile {
  * Response data for getAppDetails - extends existing EnhancedAppData
  * Adds only fields unique to app view response, uses EnhancedAppData stats directly
  */
-export interface AppDetailsData extends EnhancedAppData {
+export interface AppDetailsData extends Omit<EnhancedAppData, 'platformServices'> {
     cloudflareUrl: string | null;
     previewUrl: string | null;
     user: {

@@ -5,7 +5,6 @@ import { Database, HardDrive, ExternalLink, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { PlatformServices } from 'worker/services/platform-services/PlatformServicesManager';
-import { cn } from '@/lib/utils';
 
 interface PlatformServicesProps {
 	services?: PlatformServices | null;
