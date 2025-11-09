@@ -408,26 +408,37 @@ export function useChat({
 					// Use ref to always get the latest services value
 					// Read it right before making the API call to ensure we have the latest value
 					// The ref is updated synchronously in the useEffect above, so it should always have the latest value
-					const currentServices = servicesRef.current;
+					// Also check the prop directly as a fallback
+					const currentServices = servicesRef.current || services;
 					console.log('[useChat] Creating agent session:', {
 						userQuery: userQuery.substring(0, 50) + '...',
-						servicesRefValue: currentServices,
+						servicesRefValue: servicesRef.current,
+						servicesProp: services,
+						currentServices: currentServices,
 						includeDatabase: currentServices?.includeDatabase,
 						includeStorage: currentServices?.includeStorage,
-						servicesProp: services,
-						servicesPropIncludeDatabase: services?.includeDatabase,
-						servicesPropIncludeStorage: services?.includeStorage,
 					});
 					
-					if (!currentServices || (!currentServices.includeDatabase && !currentServices.includeStorage)) {
+					// Only pass services if at least one is selected
+					// This prevents sending { includeDatabase: false, includeStorage: false }
+					const servicesToSend = (currentServices?.includeDatabase || currentServices?.includeStorage) 
+						? currentServices 
+						: undefined;
+					
+					if (!servicesToSend) {
 						console.warn('[useChat] No services selected - services will be undefined in API call');
+					} else {
+						console.log('[useChat] Services will be sent:', {
+							includeDatabase: servicesToSend.includeDatabase,
+							includeStorage: servicesToSend.includeStorage,
+						});
 					}
 					
 					const response = await apiClient.createAgentSession({
 						query: userQuery,
 						agentMode,
 						images: userImages, // Pass images from URL params for multi-modal blueprint
-						services: currentServices, // Pass platform services preferences
+						services: servicesToSend, // Pass platform services preferences (undefined if none selected)
 					});
 
 					const parser = createRepairingJSONParser();
@@ -531,7 +542,7 @@ export function useChat({
 			}
 		}
 		init();
-	}, [urlChatId, userQuery, agentMode, userImages]);
+	}, [urlChatId, userQuery, agentMode, userImages, services]);
 
     // Mount/unmount: enable/disable reconnection and clear pending retries
     useEffect(() => {

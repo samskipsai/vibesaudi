@@ -58,6 +58,9 @@ export class CodingAgentController extends BaseController {
                 this.logger.info('Services received in request', {
                     includeDatabase: body.services.includeDatabase,
                     includeStorage: body.services.includeStorage,
+                    servicesType: typeof body.services,
+                    servicesKeys: Object.keys(body.services),
+                    fullServices: JSON.stringify(body.services),
                 });
             } else {
                 this.logger.info('No services provided in request');
@@ -126,6 +129,12 @@ export class CodingAgentController extends BaseController {
 
             // Provision platform services if requested (before saving app)
             let platformServices: PlatformServices | undefined;
+            this.logger.info('Checking if platform services should be provisioned', {
+                hasServices: !!body.services,
+                includeDatabase: body.services?.includeDatabase,
+                includeStorage: body.services?.includeStorage,
+                shouldProvision: !!(body.services && (body.services.includeDatabase || body.services.includeStorage)),
+            });
             if (body.services && (body.services.includeDatabase || body.services.includeStorage)) {
                 try {
                     const platformServicesManager = new PlatformServicesManager(env);
@@ -143,6 +152,12 @@ export class CodingAgentController extends BaseController {
                     this.logger.error('Failed to provision platform services in controller', error);
                     // Continue without services - don't block app creation
                 }
+            } else {
+                this.logger.info('Platform services NOT provisioned - condition not met', {
+                    hasServices: !!body.services,
+                    includeDatabase: body.services?.includeDatabase,
+                    includeStorage: body.services?.includeStorage,
+                });
             }
 
             // Save app to database IMMEDIATELY before returning WebSocket URL
@@ -167,7 +182,8 @@ export class CodingAgentController extends BaseController {
                 this.logger.info('App saved to database before WebSocket connection', { 
                     agentId, 
                     userId: user.id,
-                    hasPlatformServices: !!platformServices
+                    hasPlatformServices: !!platformServices,
+                    platformServicesValue: platformServices ? JSON.stringify(platformServices).substring(0, 200) : null,
                 });
             } catch (error) {
                 this.logger.error('Failed to save app to database in controller', error);
