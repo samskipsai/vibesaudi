@@ -141,7 +141,7 @@ export default function Chat() {
 		query: userQuery,
 		images: userImages,
 		agentMode: agentMode as 'deterministic' | 'smart',
-		services: (services.includeDatabase || services.includeStorage) ? services : undefined,
+		services: services, // Always pass services, even if both are false - let backend handle it
 		onDebugMessage: addDebugMessage,
 	});
 

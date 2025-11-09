@@ -76,9 +76,15 @@ export function useChat({
 	// Track the latest connection attempt to avoid handling stale socket events
 	const connectAttemptIdRef = useRef(0);
 	// Use ref to always get the latest services value
-	const servicesRef = useRef(services);
+	// Initialize with the current services value
+	const servicesRef = useRef<ServicePreferences | undefined>(services);
+	// Update ref whenever services changes
 	useEffect(() => {
 		servicesRef.current = services;
+		console.log('servicesRef updated:', {
+			includeDatabase: services?.includeDatabase,
+			includeStorage: services?.includeStorage,
+		});
 	}, [services]);
 	const [chatId, setChatId] = useState<string>();
 	const [messages, setMessages] = useState<ChatMessage[]>([
@@ -400,11 +406,23 @@ export function useChat({
 					}
 
 					// Use ref to always get the latest services value
+					// Read it right before making the API call to ensure we have the latest value
+					// The ref is updated synchronously in the useEffect above, so it should always have the latest value
 					const currentServices = servicesRef.current;
-					console.log('Creating agent session with services:', {
+					console.log('[useChat] Creating agent session:', {
+						userQuery: userQuery.substring(0, 50) + '...',
+						servicesRefValue: currentServices,
 						includeDatabase: currentServices?.includeDatabase,
 						includeStorage: currentServices?.includeStorage,
+						servicesProp: services,
+						servicesPropIncludeDatabase: services?.includeDatabase,
+						servicesPropIncludeStorage: services?.includeStorage,
 					});
+					
+					if (!currentServices || (!currentServices.includeDatabase && !currentServices.includeStorage)) {
+						console.warn('[useChat] No services selected - services will be undefined in API call');
+					}
+					
 					const response = await apiClient.createAgentSession({
 						query: userQuery,
 						agentMode,
