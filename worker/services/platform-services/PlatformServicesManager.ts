@@ -3,6 +3,8 @@
  * Handles provisioning of built-in backend services (D1, R2) for user apps
  */
 
+/// <reference path="../../worker-configuration.d.ts" />
+
 import { BaseService } from '../../database/services/BaseService';
 
 export interface PlatformServices {
