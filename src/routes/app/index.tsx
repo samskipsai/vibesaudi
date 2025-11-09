@@ -110,6 +110,13 @@ export default function AppView() {
 
 			if (appResponse.success && appResponse.data) {
 				const appData = appResponse.data;
+				console.log('App data received:', {
+					id: appData.id,
+					hasPlatformServices: !!appData.platformServices,
+					platformServices: appData.platformServices,
+					hasDatabase: !!appData.platformServices?.database,
+					hasStorage: !!appData.platformServices?.storage,
+				});
 				setApp(appData);
 				setIsFavorited(appData.userFavorited || false);
 				setIsStarred(appData.userStarred || false);

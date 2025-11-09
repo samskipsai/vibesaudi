@@ -71,7 +71,6 @@ export default function Chat() {
 		includeDatabase: false,
 		includeStorage: false,
 	});
-	const [showServiceSelection, setShowServiceSelection] = useState(false);
 
 	// Debug message utilities
 	const addDebugMessage = useCallback(
@@ -145,6 +144,15 @@ export default function Chat() {
 		services: (services.includeDatabase || services.includeStorage) ? services : undefined,
 		onDebugMessage: addDebugMessage,
 	});
+
+	// Debug: Log services state changes
+	useEffect(() => {
+		console.log('Services state updated:', {
+			includeDatabase: services.includeDatabase,
+			includeStorage: services.includeStorage,
+			willBePassed: (services.includeDatabase || services.includeStorage),
+		});
+	}, [services]);
 
 	// GitHub export functionality - use urlChatId directly from URL params
 	const githubExport = useGitHubExport(websocket, urlChatId);
@@ -670,21 +678,10 @@ export default function Chat() {
 						{/* Show service selection only for new apps */}
 						{(!urlChatId || urlChatId === 'new') && !chatId && (
 							<div className="mb-3">
-								<button
-									type="button"
-									onClick={() => setShowServiceSelection(!showServiceSelection)}
-									className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-								>
-									{showServiceSelection ? 'Hide' : 'Show'} platform services
-								</button>
-								{showServiceSelection && (
-									<div className="mt-2">
-										<ServiceSelection
-											onChange={setServices}
-											defaultServices={services}
-										/>
-									</div>
-								)}
+								<ServiceSelection
+									onChange={setServices}
+									defaultServices={services}
+								/>
 							</div>
 						)}
 						{images.length > 0 && (

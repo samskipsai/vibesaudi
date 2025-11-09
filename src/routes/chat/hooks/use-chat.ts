@@ -75,6 +75,11 @@ export function useChat({
 	const shouldReconnectRef = useRef(true);
 	// Track the latest connection attempt to avoid handling stale socket events
 	const connectAttemptIdRef = useRef(0);
+	// Use ref to always get the latest services value
+	const servicesRef = useRef(services);
+	useEffect(() => {
+		servicesRef.current = services;
+	}, [services]);
 	const [chatId, setChatId] = useState<string>();
 	const [messages, setMessages] = useState<ChatMessage[]>([
 		createAIMessage('main', 'Thinking...', true),
@@ -394,12 +399,17 @@ export function useChat({
 						return;
 					}
 
-					// Start new code generation using API client
+					// Use ref to always get the latest services value
+					const currentServices = servicesRef.current;
+					console.log('Creating agent session with services:', {
+						includeDatabase: currentServices?.includeDatabase,
+						includeStorage: currentServices?.includeStorage,
+					});
 					const response = await apiClient.createAgentSession({
 						query: userQuery,
 						agentMode,
 						images: userImages, // Pass images from URL params for multi-modal blueprint
-						services, // Pass platform services preferences
+						services: currentServices, // Pass platform services preferences
 					});
 
 					const parser = createRepairingJSONParser();
@@ -503,7 +513,7 @@ export function useChat({
 			}
 		}
 		init();
-	}, []);
+	}, [urlChatId, userQuery, agentMode, userImages]);
 
     // Mount/unmount: enable/disable reconnection and clear pending retries
     useEffect(() => {

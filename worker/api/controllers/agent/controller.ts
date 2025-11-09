@@ -52,6 +52,16 @@ export class CodingAgentController extends BaseController {
             if (!query) {
                 return CodingAgentController.createErrorResponse('Missing "query" field in request body', 400);
             }
+
+            // Log services if provided
+            if (body.services) {
+                this.logger.info('Services received in request', {
+                    includeDatabase: body.services.includeDatabase,
+                    includeStorage: body.services.includeStorage,
+                });
+            } else {
+                this.logger.info('No services provided in request');
+            }
             const { readable, writable } = new TransformStream({
                 transform(chunk, controller) {
                     if (chunk === "terminate") {
