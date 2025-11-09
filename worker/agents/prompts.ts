@@ -53,7 +53,7 @@ export const PROMPT_UTILS = {
         return outputParts.join('\n');
     },
 
-    serializeTemplate(template?: TemplateDetails, platformServices?: import('../../services/platform-services/PlatformServicesManager').PlatformServices): string {
+    serializeTemplate(template?: TemplateDetails, platformServices?: { database?: { type: 'd1'; databaseId?: string; databaseName: string; bindingName: string }; storage?: { type: 'r2'; bucketName: string; bindingName: string }; envVars: Record<string, string> }): string {
         if (template) {
             // const indentedFilesText = filesText.replace(/^(?=.)/gm, '\t\t\t\t'); // Indent each line with 4 spaces
             let platformServicesSection = '';
@@ -1270,7 +1270,7 @@ export interface GeneralSystemPromptBuilderParams {
     language?: string;
     frameworks?: string[];
     templateMetaInfo?: TemplateSelection;
-    platformServices?: import('../../services/platform-services/PlatformServicesManager').PlatformServices;
+    platformServices?: { database?: { type: 'd1'; databaseId?: string; databaseName: string; bindingName: string }; storage?: { type: 'r2'; bucketName: string; bindingName: string }; envVars: Record<string, string> };
 }
 
 export function generalSystemPromptBuilder(

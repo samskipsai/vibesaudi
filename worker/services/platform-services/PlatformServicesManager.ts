@@ -4,7 +4,6 @@
  */
 
 import { BaseService } from '../../database/services/BaseService';
-import { generateId } from '../../utils/idGenerator';
 
 export interface PlatformServices {
     database?: {
@@ -69,19 +68,23 @@ export class PlatformServicesManager extends BaseService {
             // Provision D1 Database if requested
             if (preferences.includeDatabase) {
                 const dbService = await this.provisionD1Database(appId, userId);
-                services.database = dbService;
-                // D1 connection is handled via binding, but we can provide the database name
-                services.envVars['DATABASE_NAME'] = dbService.databaseName;
-                services.envVars['DATABASE_BINDING'] = dbService.bindingName;
+                if (dbService) {
+                    services.database = dbService;
+                    // D1 connection is handled via binding, but we can provide the database name
+                    services.envVars['DATABASE_NAME'] = dbService.databaseName;
+                    services.envVars['DATABASE_BINDING'] = dbService.bindingName;
+                }
             }
 
             // Provision R2 Storage if requested
             if (preferences.includeStorage) {
                 const r2Service = await this.provisionR2Bucket(appId, userId);
-                services.storage = r2Service;
-                services.envVars['R2_BUCKET_NAME'] = r2Service.bucketName;
-                services.envVars['R2_BINDING'] = r2Service.bindingName;
-                services.envVars['R2_ACCOUNT_ID'] = this.env.CLOUDFLARE_ACCOUNT_ID as string;
+                if (r2Service) {
+                    services.storage = r2Service;
+                    services.envVars['R2_BUCKET_NAME'] = r2Service.bucketName;
+                    services.envVars['R2_BINDING'] = r2Service.bindingName;
+                    services.envVars['R2_ACCOUNT_ID'] = this.env.CLOUDFLARE_ACCOUNT_ID as string;
+                }
             }
 
             this.logger.info('Platform services provisioned', {
@@ -105,7 +108,7 @@ export class PlatformServicesManager extends BaseService {
      */
     private async provisionD1Database(
         appId: string,
-        userId: string
+        _userId: string
     ): Promise<PlatformServices['database']> {
         const databaseName = `app-${appId}-db`;
         const bindingName = 'DB'; // Standard binding name
@@ -120,7 +123,7 @@ export class PlatformServicesManager extends BaseService {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ errors: [{ message: 'Unknown error' }] }));
+                const errorData = await response.json().catch(() => ({ errors: [{ message: 'Unknown error' }] })) as { errors?: Array<{ message?: string }> };
                 const errorMessage = errorData.errors?.[0]?.message || `HTTP ${response.status}`;
                 
                 // If database already exists, try to find it
@@ -143,7 +146,7 @@ export class PlatformServicesManager extends BaseService {
                 throw new Error(`Failed to create D1 database: ${errorMessage}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as { result?: { uuid?: string } };
             const databaseId = data.result?.uuid;
 
             if (!databaseId) {
@@ -183,9 +186,9 @@ export class PlatformServicesManager extends BaseService {
                 return null;
             }
 
-            const data = await response.json();
+            const data = await response.json() as { result?: Array<{ uuid: string; name: string }> };
             const databases = data.result || [];
-            return databases.find((db: any) => db.name === databaseName) || null;
+            return databases.find((db) => db.name === databaseName) || null;
         } catch (error) {
             this.logger.error('Failed to list D1 databases', error);
             return null;
@@ -197,7 +200,7 @@ export class PlatformServicesManager extends BaseService {
      */
     private async provisionR2Bucket(
         appId: string,
-        userId: string
+        _userId: string
     ): Promise<PlatformServices['storage']> {
         const bucketName = `app-${appId}-storage`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
         const bindingName = 'STORAGE'; // Standard binding name
@@ -212,7 +215,7 @@ export class PlatformServicesManager extends BaseService {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ errors: [{ message: 'Unknown error' }] }));
+                const errorData = await response.json().catch(() => ({ errors: [{ message: 'Unknown error' }] })) as { errors?: Array<{ message?: string }> };
                 const errorMessage = errorData.errors?.[0]?.message || `HTTP ${response.status}`;
                 
                 // If bucket already exists, that's okay - we can use it
