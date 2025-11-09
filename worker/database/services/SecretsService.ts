@@ -119,7 +119,7 @@ export class SecretsService extends BaseService {
         const derivedBits = await crypto.subtle.deriveBits(
             {
                 name: 'PBKDF2',
-                salt: salt,
+                salt: salt as BufferSource,
                 iterations: 100000, // OWASP recommended minimum
                 hash: 'SHA-256'
             },
@@ -127,7 +127,7 @@ export class SecretsService extends BaseService {
             256 // 32 bytes
         );
         
-        return new Uint8Array(derivedBits);
+        return new Uint8Array(derivedBits as ArrayBuffer);
     }
 
     /**
