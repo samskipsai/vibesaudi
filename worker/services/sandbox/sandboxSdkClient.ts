@@ -925,14 +925,30 @@ export class SandboxSdkClient extends BaseSandboxService {
                         
                     return { previewURL, tunnelURL, processId, allocatedPort };
                 } catch (error) {
-                    this.logger.warn('Failed to start dev server', error);
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    this.logger.error('Failed to start dev server', {
+                        instanceId,
+                        error: errorMsg,
+                        stack: error instanceof Error ? error.stack : undefined
+                    });
                     return undefined;
                 }
             } else {
-                this.logger.warn('Failed to install dependencies', installResult.stderr);
+                this.logger.error('Failed to install dependencies', {
+                    instanceId,
+                    exitCode: installResult.exitCode,
+                    stderr: installResult.stderr,
+                    stdout: installResult.stdout
+                });
             }
         } catch (error) {
-            this.logger.warn('Failed to setup instance', error);
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.logger.error('Failed to setup instance', {
+                instanceId,
+                projectName,
+                error: errorMsg,
+                stack: error instanceof Error ? error.stack : undefined
+            });
         }
         
         return undefined;
@@ -1023,9 +1039,14 @@ export class SandboxSdkClient extends BaseSandboxService {
             const setupPromise = () => this.setupInstance(instanceId, projectName, localEnvVars);
             const setupResult = await setupPromise();
             if (!setupResult) {
+                this.logger.error('setupInstance returned undefined', {
+                    instanceId,
+                    projectName,
+                    templateName
+                });
                 return {
                     success: false,
-                    error: 'Failed to setup instance'
+                    error: 'Failed to setup instance: setupInstance returned undefined. Check logs for details.'
                 };
             }
             results = setupResult;

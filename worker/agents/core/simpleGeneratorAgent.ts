@@ -780,11 +780,23 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             if (phaseConcept === undefined) {
                 phaseConcept = this.state.currentPhase;
                 if (phaseConcept === undefined) {
-                    this.logger().error("No phase concept provided to implement, will call phase generation");
-                    const results = await this.executePhaseGeneration();
-                    phaseConcept = results.result;
-                    if (phaseConcept === undefined) {
-                        this.logger().error("No phase concept provided to implement, will return");
+                    this.logger().warn("No phase concept provided to implement, will call phase generation");
+                    try {
+                        const results = await this.executePhaseGeneration();
+                        phaseConcept = results.result;
+                        if (phaseConcept === undefined) {
+                            this.logger().error("Phase generation did not return a phase concept", {
+                                hasResult: !!results,
+                                currentDevState: results?.currentDevState,
+                                hasStaticAnalysis: !!results?.staticAnalysis
+                            });
+                            return {currentDevState: CurrentDevState.FINALIZING};
+                        }
+                    } catch (error) {
+                        this.logger().error("Error during phase generation", {
+                            error: error instanceof Error ? error.message : String(error),
+                            stack: error instanceof Error ? error.stack : undefined
+                        });
                         return {currentDevState: CurrentDevState.FINALIZING};
                     }
                 }
@@ -1844,19 +1856,57 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             });
         }
         
-        const createResponse = await this.getSandboxServiceClient().createInstance(templateName, `v1-${projectName}`, webhookUrl, localEnvVars);
-        if (!createResponse || !createResponse.success || !createResponse.runId) {
-            throw new Error(`Failed to create sandbox instance: ${createResponse?.error || 'Unknown error'}`);
+        try {
+            this.logger().info('Creating sandbox instance', { templateName, projectName, hasWebhook: !!webhookUrl, envVarsCount: Object.keys(localEnvVars).length });
+            const createResponse = await this.getSandboxServiceClient().createInstance(templateName, `v1-${projectName}`, webhookUrl, localEnvVars);
+            
+            this.logger().info(`Received createInstance response`, { 
+                success: createResponse?.success, 
+                hasRunId: !!createResponse?.runId,
+                hasPreviewURL: !!createResponse?.previewURL,
+                error: createResponse?.error,
+                message: createResponse?.message
+            });
+
+            if (!createResponse || !createResponse.success || !createResponse.runId) {
+                const errorMsg = createResponse?.error || 'Unknown error';
+                this.logger().error('createInstance failed', { 
+                    templateName, 
+                    projectName, 
+                    error: errorMsg,
+                    response: createResponse 
+                });
+                throw new Error(`Failed to create sandbox instance: ${errorMsg}`);
+            }
+
+            if (createResponse.runId && createResponse.previewURL) {
+                this.previewUrlCache = createResponse.previewURL;
+                this.logger().info('Sandbox instance created successfully', {
+                    runId: createResponse.runId,
+                    previewURL: createResponse.previewURL,
+                    tunnelURL: createResponse.tunnelURL
+                });
+                return createResponse;
+            }
+
+            const errorMsg = createResponse?.error || 'Missing runId or previewURL in response';
+            this.logger().error('createInstance response missing required fields', {
+                templateName,
+                projectName,
+                hasRunId: !!createResponse.runId,
+                hasPreviewURL: !!createResponse.previewURL,
+                response: createResponse
+            });
+            throw new Error(`Failed to create sandbox instance: ${errorMsg}`);
+        } catch (error) {
+            this.logger().error('Exception in createNewPreview', {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                templateName,
+                projectName
+            });
+            throw error;
         }
-
-        this.logger().info(`Received createInstance response: ${JSON.stringify(createResponse, null, 2)}`)
-
-        if (createResponse.runId && createResponse.previewURL) {
-            this.previewUrlCache = createResponse.previewURL;
-            return createResponse;
-        }
-
-        throw new Error(`Failed to create sandbox instance: ${createResponse?.error || 'Unknown error'}`);
     }
 
     private async ensurePreviewExists(redeploy: boolean = false) {
@@ -1995,10 +2045,23 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
 
             return preview;
         } catch (error) {
-            this.logger().error("Error deploying to sandbox service:", error, { sessionId: this.state.sessionId, sandboxInstanceId: this.state.sandboxInstanceId });
             const errorMsg = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            
+            this.logger().error("Error deploying to sandbox service", {
+                error: errorMsg,
+                stack: errorStack,
+                sessionId: this.state.sessionId,
+                sandboxInstanceId: this.state.sandboxInstanceId,
+                filesCount: files.length,
+                redeploy,
+                retries,
+                templateName: this.state.templateDetails?.name
+            });
+            
             if (errorMsg.includes('Network connection lost') || errorMsg.includes('Container service disconnected') || errorMsg.includes('Internal error in Durable Object storage')) {
                 // For this particular error, reset the sandbox sessionId
+                this.logger().warn("Resetting sandbox session due to connection error");
                 this.resetSessionId();
             }
 
@@ -2006,14 +2069,22 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                 ...this.state,
                 sandboxInstanceId: undefined,
             });
+            
             if (retries > 0) {
+                const backoffSeconds = Math.pow(2, MAX_DEPLOYMENT_RETRIES - retries);
+                this.logger().info(`Retrying deployment in ${backoffSeconds} seconds`, { retriesLeft: retries - 1 });
                 this.broadcast(WebSocketMessageResponses.DEPLOYMENT_FAILED, {
-                    error: `Error deploying to sandbox service: ${errorMsg}, Will retry...`,
+                    error: `Error deploying to sandbox service: ${errorMsg}, Will retry in ${backoffSeconds} seconds...`,
                 });
                 // Wait for exponential backoff
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, MAX_DEPLOYMENT_RETRIES - retries) * 1000));
+                await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
                 return this.executeDeployment(files, redeploy, commitMessage, retries - 1);
             }
+            
+            this.logger().error("Deployment failed after all retries", {
+                error: errorMsg,
+                maxRetries: MAX_DEPLOYMENT_RETRIES
+            });
             this.broadcast(WebSocketMessageResponses.DEPLOYMENT_FAILED, {
                 error: `Error deploying to sandbox service: ${errorMsg}. Please report an issue if this persists`,
             });
