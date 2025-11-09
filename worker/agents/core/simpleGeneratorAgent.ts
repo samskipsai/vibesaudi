@@ -33,7 +33,7 @@ import { InferenceContext, AgentActionKey } from '../inferutils/config.types';
 import { AGENT_CONFIG } from '../inferutils/config';
 import { ModelConfigService } from '../../database/services/ModelConfigService';
 import { FileFetcher, fixProjectIssues } from '../../services/code-fixer';
-import { PlatformServicesManager } from '../../services/platform-services/PlatformServicesManager';
+import { PlatformServicesManager, type PlatformServices } from '../../services/platform-services/PlatformServicesManager';
 import { FastCodeFixerOperation } from '../operations/FastCodeFixer';
 import { getProtocolForHost } from '../../utils/urls';
 import { looksLikeCommand } from '../utils/common';
@@ -232,32 +232,53 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         this.sql`CREATE TABLE IF NOT EXISTS compact_conversations (id TEXT PRIMARY KEY, messages TEXT)`;
     }
 
-    async saveToDatabase() {
-        this.logger().info(`Blueprint generated successfully for agent ${this.getAgentId()}`);
-        // Save the app to database (authenticated users only)
+    /**
+     * Save minimal app record early (before blueprint generation)
+     * This ensures the app exists in the database for ownership checks
+     */
+    async saveAppEarly(query: string, platformServices?: PlatformServices) {
+        this.logger().info(`Saving app early for agent ${this.getAgentId()}`);
         const appService = new AppService(this.env);
         await appService.createApp({
             id: this.state.inferenceContext.agentId,
             userId: this.state.inferenceContext.userId,
             sessionToken: null,
-            title: this.state.blueprint.title || this.state.query.substring(0, 100),
-            description: this.state.blueprint.description || null,
-            originalPrompt: this.state.query,
-            finalPrompt: this.state.query,
-            framework: this.state.blueprint.frameworks?.[0],
+            title: query.substring(0, 100), // Temporary title, will be updated with blueprint
+            description: null,
+            originalPrompt: query,
+            finalPrompt: query,
+            framework: null, // Will be updated with blueprint
             visibility: 'private',
             status: 'generating',
-            platformServices: this.state.platformServices ? JSON.stringify(this.state.platformServices) : null,
+            platformServices: platformServices ? JSON.stringify(platformServices) : null,
             createdAt: new Date(),
             updatedAt: new Date()
         });
-        this.logger().info(`App saved successfully to database for agent ${this.state.inferenceContext.agentId}`, { 
+        this.logger().info(`App saved early to database for agent ${this.state.inferenceContext.agentId}`, { 
             agentId: this.state.inferenceContext.agentId, 
             userId: this.state.inferenceContext.userId,
-            visibility: 'private',
-            hasPlatformServices: !!this.state.platformServices
+            hasPlatformServices: !!platformServices
         });
-        this.logger().info(`Agent initialized successfully for agent ${this.state.inferenceContext.agentId}`);
+    }
+
+    /**
+     * Update app record with blueprint details after generation
+     */
+    async saveToDatabase() {
+        this.logger().info(`Updating app with blueprint details for agent ${this.getAgentId()}`);
+        // Update the app with blueprint details (app should already exist from saveAppEarly)
+        const appService = new AppService(this.env);
+        await appService.updateApp(this.state.inferenceContext.agentId, {
+            title: this.state.blueprint.title || this.state.query.substring(0, 100),
+            description: this.state.blueprint.description || null,
+            framework: this.state.blueprint.frameworks?.[0],
+            updatedAt: new Date()
+        });
+        this.logger().info(`App updated successfully with blueprint details for agent ${this.state.inferenceContext.agentId}`, { 
+            agentId: this.state.inferenceContext.agentId, 
+            title: this.state.blueprint.title,
+            framework: this.state.blueprint.frameworks?.[0]
+        });
     }
 
     /**
@@ -290,6 +311,15 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                 this.logger().error('Failed to provision platform services', error);
                 // Continue without services - don't block app creation
             }
+        }
+        
+        // Save app early to database (before blueprint generation)
+        // This ensures the app exists for ownership checks when WebSocket connects
+        try {
+            await this.saveAppEarly(query, platformServices);
+        } catch (error) {
+            this.logger().error('Failed to save app early', error);
+            // Continue - we'll try again later, but ownership checks may fail
         }
         
         // Generate a blueprint
