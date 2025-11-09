@@ -5,6 +5,7 @@ import type { TemplateDetails } from '../../services/sandbox/sandboxTypes';
 // import type { ScreenshotData } from './types';
 import type { ConversationMessage } from '../inferutils/common';
 import type { InferenceContext } from '../inferutils/config.types';
+import type { PlatformServices } from '../../services/platform-services/PlatformServicesManager';
 
 export interface FileState extends FileOutputType {
     lasthash: string;
@@ -59,4 +60,5 @@ export interface CodeGenState {
     conversationMessages: ConversationMessage[];
     projectUpdatesAccumulator: string[];
     inferenceContext: InferenceContext;
+    platformServices?: PlatformServices; // Provisioned platform services (D1, R2)
 } 

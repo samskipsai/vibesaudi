@@ -48,11 +48,14 @@ export interface PhaseTimelineItem {
 	timestamp: number;
 }
 
+import type { ServicePreferences } from 'worker/services/platform-services/PlatformServicesManager';
+
 export function useChat({
 	chatId: urlChatId,
 	query: userQuery,
 	images: userImages,
 	agentMode = 'deterministic',
+	services,
 	onDebugMessage,
 	onTerminalMessage,
 }: {
@@ -60,6 +63,7 @@ export function useChat({
 	query: string | null;
 	images?: ImageAttachment[];
 	agentMode?: 'deterministic' | 'smart';
+	services?: ServicePreferences;
 	onDebugMessage?: (type: 'error' | 'warning' | 'info' | 'websocket', message: string, details?: string, source?: string, messageType?: string, rawMessage?: unknown) => void;
 	onTerminalMessage?: (log: { id: string; content: string; type: 'command' | 'stdout' | 'stderr' | 'info' | 'error' | 'warn' | 'debug'; timestamp: number; source?: string }) => void;
 }) {
@@ -395,6 +399,7 @@ export function useChat({
 						query: userQuery,
 						agentMode,
 						images: userImages, // Pass images from URL params for multi-modal blueprint
+						services, // Pass platform services preferences
 					});
 
 					const parser = createRepairingJSONParser();

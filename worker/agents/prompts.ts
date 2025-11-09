@@ -53,9 +53,33 @@ export const PROMPT_UTILS = {
         return outputParts.join('\n');
     },
 
-    serializeTemplate(template?: TemplateDetails): string {
+    serializeTemplate(template?: TemplateDetails, platformServices?: import('../../services/platform-services/PlatformServicesManager').PlatformServices): string {
         if (template) {
             // const indentedFilesText = filesText.replace(/^(?=.)/gm, '\t\t\t\t'); // Indent each line with 4 spaces
+            let platformServicesSection = '';
+            if (platformServices) {
+                const services: string[] = [];
+                if (platformServices.database) {
+                    services.push(`- **D1 Database**: Available via binding \`${platformServices.database.bindingName}\`. Use \`env.${platformServices.database.bindingName}\` to access the database. The database name is \`${platformServices.database.databaseName}\`.`);
+                }
+                if (platformServices.storage) {
+                    services.push(`- **R2 Storage**: Available via binding \`${platformServices.storage.bindingName}\`. Use \`env.${platformServices.storage.bindingName}\` to access the bucket. The bucket name is \`${platformServices.storage.bucketName}\`.`);
+                }
+                if (services.length > 0) {
+                    platformServicesSection = `
+<PLATFORM SERVICES>
+The following Cloudflare platform services are available for this application:
+
+${services.join('\n')}
+
+**Usage Instructions:**
+- D1 Database: Use Drizzle ORM or raw SQL queries. Example: \`await env.DB.prepare('SELECT * FROM users').all()\`
+- R2 Storage: Use the R2 API for file uploads/downloads. Example: \`await env.STORAGE.put(key, value)\`
+
+These services are pre-configured and ready to use. No additional setup is required.
+</PLATFORM SERVICES>`;
+                }
+            }
             return `
 <TEMPLATE DETAILS>
 The following are the details (structures and files) of the starting boilerplate template, on which the project is based.
@@ -68,7 +92,7 @@ Apart from these files, All SHADCN Components are present in ./src/components/ui
 
 Template Usage Instructions: 
 ${template.description.usage}
-
+${platformServicesSection}
 <DO NOT TOUCH FILES>
 These files are forbidden to be modified. Do not touch them under any circumstances.
 ${(template.dontTouchFiles ?? []).join('\n')}
@@ -1239,13 +1263,14 @@ FRONTEND_FIRST_CODING: `<PHASES GENERATION STRATEGY>
 }
 
 export interface GeneralSystemPromptBuilderParams {
-    query: string,
-    templateDetails: TemplateDetails,
-    dependencies: Record<string, string>,
-    blueprint?: Blueprint,
-    language?: string,
-    frameworks?: string[],
-    templateMetaInfo?: TemplateSelection,
+    query: string;
+    blueprint?: Blueprint;
+    templateDetails?: TemplateDetails;
+    dependencies?: Record<string, string>;
+    language?: string;
+    frameworks?: string[];
+    templateMetaInfo?: TemplateSelection;
+    platformServices?: import('../../services/platform-services/PlatformServicesManager').PlatformServices;
 }
 
 export function generalSystemPromptBuilder(
@@ -1255,7 +1280,7 @@ export function generalSystemPromptBuilder(
     // Base variables always present
     const variables: Record<string, string> = {
         query: params.query,
-        template: PROMPT_UTILS.serializeTemplate(params.templateDetails),
+        template: PROMPT_UTILS.serializeTemplate(params.templateDetails, params.platformServices),
         dependencies: JSON.stringify(params.dependencies ?? {})
     };
 

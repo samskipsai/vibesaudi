@@ -1,6 +1,8 @@
 import { PreviewType } from "../../../services/sandbox/sandboxTypes";
 import type { ImageAttachment } from '../../../types/image-attachment';
 
+import type { ServicePreferences } from '../../../services/platform-services/PlatformServicesManager';
+
 export interface CodeGenArgs {
     query: string;
     language?: string;
@@ -8,6 +10,7 @@ export interface CodeGenArgs {
     selectedTemplate?: string;
     agentMode: 'deterministic' | 'smart';
     images?: ImageAttachment[];
+    services?: ServicePreferences; // Platform services to include (D1, R2)
 }
 
 /**

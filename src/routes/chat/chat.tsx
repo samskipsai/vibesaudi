@@ -34,6 +34,8 @@ import { useImageUpload } from '@/hooks/use-image-upload';
 import { useDragDrop } from '@/hooks/use-drag-drop';
 import { ImageAttachmentPreview } from '@/components/image-attachment-preview';
 import { createAIMessage } from './utils/message-helpers';
+import { ServiceSelection } from './components/service-selection';
+import type { ServicePreferences } from 'worker/services/platform-services/PlatformServicesManager';
 
 export default function Chat() {
 	const { chatId: urlChatId } = useParams();
@@ -63,6 +65,13 @@ export default function Chat() {
 
 	// Manual refresh trigger for preview
 	const [manualRefreshTrigger, setManualRefreshTrigger] = useState(0);
+	
+	// Platform services selection
+	const [services, setServices] = useState<ServicePreferences>({
+		includeDatabase: false,
+		includeStorage: false,
+	});
+	const [showServiceSelection, setShowServiceSelection] = useState(false);
 
 	// Debug message utilities
 	const addDebugMessage = useCallback(
@@ -133,6 +142,7 @@ export default function Chat() {
 		query: userQuery,
 		images: userImages,
 		agentMode: agentMode as 'deterministic' | 'smart',
+		services: (services.includeDatabase || services.includeStorage) ? services : undefined,
 		onDebugMessage: addDebugMessage,
 	});
 
@@ -655,6 +665,26 @@ export default function Chat() {
 						{isChatDragging && (
 							<div className="absolute inset-0 flex items-center justify-center bg-accent/10 backdrop-blur-sm rounded-xl z-50 pointer-events-none">
 								<p className="text-accent font-medium">Drop images here</p>
+							</div>
+						)}
+						{/* Show service selection only for new apps */}
+						{(!urlChatId || urlChatId === 'new') && !chatId && (
+							<div className="mb-3">
+								<button
+									type="button"
+									onClick={() => setShowServiceSelection(!showServiceSelection)}
+									className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{showServiceSelection ? 'Hide' : 'Show'} platform services
+								</button>
+								{showServiceSelection && (
+									<div className="mt-2">
+										<ServiceSelection
+											onChange={setServices}
+											defaultServices={services}
+										/>
+									</div>
+								)}
 							</div>
 						)}
 						{images.length > 0 && (

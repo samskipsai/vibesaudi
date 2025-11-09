@@ -20,6 +20,7 @@ export function getSystemPromptWithProjectContext(
             blueprint,
             templateDetails,
             dependencies,
+            platformServices: context.platformServices,
         })), 
         createUserMessage(
             USER_PROMPT_FORMATTER.PROJECT_CONTEXT(

@@ -33,6 +33,7 @@ import { InferenceContext, AgentActionKey } from '../inferutils/config.types';
 import { AGENT_CONFIG } from '../inferutils/config';
 import { ModelConfigService } from '../../database/services/ModelConfigService';
 import { FileFetcher, fixProjectIssues } from '../../services/code-fixer';
+import { PlatformServicesManager } from '../../services/platform-services/PlatformServicesManager';
 import { FastCodeFixerOperation } from '../operations/FastCodeFixer';
 import { getProtocolForHost } from '../../utils/urls';
 import { looksLikeCommand } from '../utils/common';
@@ -266,8 +267,28 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         ..._args: unknown[]
     ): Promise<CodeGenState> {
 
-        const { query, language, frameworks, hostname, inferenceContext, templateInfo, sandboxSessionId } = initArgs;
+        const { query, language, frameworks, hostname, inferenceContext, templateInfo, sandboxSessionId, services } = initArgs;
         this.initLogger(inferenceContext.agentId, sandboxSessionId, inferenceContext.userId);
+        
+        // Provision platform services if requested
+        let platformServices;
+        if (services && (services.includeDatabase || services.includeStorage)) {
+            try {
+                const platformServicesManager = new PlatformServicesManager(this.env);
+                platformServices = await platformServicesManager.provisionServicesForApp(
+                    inferenceContext.agentId,
+                    inferenceContext.userId,
+                    services
+                );
+                this.logger().info('Platform services provisioned', {
+                    database: !!platformServices.database,
+                    storage: !!platformServices.storage,
+                });
+            } catch (error) {
+                this.logger().error('Failed to provision platform services', error);
+                // Continue without services - don't block app creation
+            }
+        }
         
         // Generate a blueprint
         this.logger().info('Generating blueprint', { query, queryLength: query.length, imagesCount: initArgs.images?.length || 0 });
@@ -306,6 +327,7 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             sessionId: sandboxSessionId,
             hostname,
             inferenceContext,
+            platformServices, // Store provisioned services
         });
 
         try {
@@ -1718,6 +1740,17 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                 "CF_AI_BASE_URL": generateAppProxyUrl(this.env),
                 "CF_AI_API_KEY": await generateAppProxyToken(this.state.inferenceContext.agentId, this.state.inferenceContext.userId, this.env)
             }
+        }
+        
+        // Add platform services environment variables
+        if (this.state.platformServices?.envVars) {
+            localEnvVars = {
+                ...localEnvVars,
+                ...this.state.platformServices.envVars
+            };
+            this.logger().info('Including platform services env vars', {
+                services: Object.keys(this.state.platformServices.envVars),
+            });
         }
         
         const createResponse = await this.getSandboxServiceClient().createInstance(templateName, `v1-${projectName}`, webhookUrl, localEnvVars);

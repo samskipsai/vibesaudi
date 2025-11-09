@@ -144,7 +144,8 @@ export class CodingAgentController extends BaseController {
                     writer.write({chunk});
                 },
                 templateInfo: { templateDetails, selection },
-                sandboxSessionId
+                sandboxSessionId,
+                services: body.services // Pass service preferences
             }, body.agentMode || defaultCodeGenArgs.agentMode) as Promise<CodeGenState>;
             agentPromise.then(async (_state: CodeGenState) => {
                 writer.write("terminate");

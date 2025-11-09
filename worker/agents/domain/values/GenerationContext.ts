@@ -4,6 +4,7 @@ import { CodeGenState, FileState, PhaseState } from '../../core/state';
 import { DependencyManagement } from '../pure/DependencyManagement';
 import type { StructuredLogger } from '../../../logger';
 import { FileProcessing } from '../pure/FileProcessing';
+import type { PlatformServices } from '../../../services/platform-services/PlatformServicesManager';
 
 /**
  * Immutable context for code generation operations
@@ -17,7 +18,8 @@ export class GenerationContext {
         public readonly dependencies: Record<string, string>,
         public readonly allFiles: FileState[],
         public readonly generatedPhases: PhaseState[],
-        public readonly commandsHistory: string[]
+        public readonly commandsHistory: string[],
+        public readonly platformServices?: PlatformServices
     ) {
         // Freeze to ensure immutability
         Object.freeze(this);
@@ -49,7 +51,8 @@ export class GenerationContext {
             dependencies,
             allFiles,
             state.generatedPhases,
-            state.commandsHistory || []
+            state.commandsHistory || [],
+            state.platformServices
         );
     }
 

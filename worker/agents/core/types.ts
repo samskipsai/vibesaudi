@@ -8,6 +8,8 @@ import { TemplateSelection } from '../schemas';
 import { CurrentDevState } from './state';
 import { ProcessedImageAttachment } from 'worker/types/image-attachment';
 
+import type { ServicePreferences } from '../../services/platform-services/PlatformServicesManager';
+
 export interface AgentInitArgs {
     query: string;
     language?: string;
@@ -21,6 +23,7 @@ export interface AgentInitArgs {
     sandboxSessionId: string
     images?: ProcessedImageAttachment[];
     onBlueprintChunk: (chunk: string) => void;
+    services?: ServicePreferences; // Platform services to include (D1, R2)
 }
 
 export interface AllIssues {
