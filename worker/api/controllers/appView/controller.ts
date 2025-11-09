@@ -75,13 +75,30 @@ export class AppViewController extends BaseController {
                     platformServices = typeof appResult.platformServices === 'string' 
                         ? JSON.parse(appResult.platformServices) 
                         : appResult.platformServices as PlatformServices;
+                    
+                    this.logger.info('Platform services parsed successfully', { 
+                        appId, 
+                        hasDatabase: !!platformServices?.database,
+                        hasStorage: !!platformServices?.storage,
+                        platformServicesType: typeof appResult.platformServices
+                    });
                 } catch (error) {
-                    this.logger.warn('Failed to parse platform services JSON', { appId, error });
+                    this.logger.warn('Failed to parse platform services JSON', { 
+                        appId, 
+                        error,
+                        rawValue: appResult.platformServices,
+                        rawValueType: typeof appResult.platformServices
+                    });
                 }
+            } else {
+                this.logger.info('No platform services found for app', { appId });
             }
 
+            // Exclude platformServices from spread since we're parsing it separately
+            const { platformServices: _, ...appResultWithoutPlatformServices } = appResult;
+            
             const responseData: AppDetailsData = {
-                ...appResult, // Spread all EnhancedAppData fields including stats
+                ...appResultWithoutPlatformServices, // Spread all EnhancedAppData fields except platformServices
                 cloudflareUrl: cloudflareUrl,
                 previewUrl: previewUrl || cloudflareUrl,
                 user: {
@@ -90,7 +107,7 @@ export class AppViewController extends BaseController {
                     avatarUrl: appResult.userAvatar
                 },
                 agentSummary,
-                platformServices,
+                platformServices, // Use parsed platform services
             };
 
             return AppViewController.createSuccessResponse(responseData);
