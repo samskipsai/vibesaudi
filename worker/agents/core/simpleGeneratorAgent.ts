@@ -239,16 +239,22 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
      * This ensures the app exists in the database for ownership checks
      * Note: App is now saved in the controller before WebSocket connection,
      * but this method is kept as a fallback and for idempotency
+     * 
+     * @param agentId - The agent ID (from inferenceContext, not from state)
+     * @param userId - The user ID (from inferenceContext, not from state)
+     * @param query - The user's query/prompt
+     * @param platformServices - Optional platform services to save
      */
-    async saveAppEarly(query: string, platformServices?: PlatformServices) {
-        this.logger().info(`Saving app early for agent ${this.getAgentId()}`);
+    async saveAppEarly(agentId: string, userId: string, query: string, platformServices?: PlatformServices) {
+        // Use agentId parameter directly instead of this.getAgentId() which relies on state
+        this.logger().info(`Saving app early for agent ${agentId}`);
         const appService = new AppService(this.env);
         
         // Check if app already exists (it should, since controller saves it first)
-        const existingApp = await appService.getAppDetails(this.state.inferenceContext.agentId, this.state.inferenceContext.userId);
+        const existingApp = await appService.getAppDetails(agentId, userId);
         if (existingApp) {
             this.logger().info(`App already exists, skipping early save`, { 
-                agentId: this.state.inferenceContext.agentId 
+                agentId 
             });
             return;
         }
@@ -256,8 +262,8 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         // App doesn't exist, create it (fallback case)
         try {
             await appService.createApp({
-                id: this.state.inferenceContext.agentId,
-                userId: this.state.inferenceContext.userId,
+                id: agentId,
+                userId: userId,
                 sessionToken: null,
                 title: query.substring(0, 100), // Temporary title, will be updated with blueprint
                 description: null,
@@ -270,16 +276,16 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
-            this.logger().info(`App saved early to database for agent ${this.state.inferenceContext.agentId}`, { 
-                agentId: this.state.inferenceContext.agentId, 
-                userId: this.state.inferenceContext.userId,
+            this.logger().info(`App saved early to database for agent ${agentId}`, { 
+                agentId, 
+                userId,
                 hasPlatformServices: !!platformServices
             });
         } catch (error) {
             // If app already exists (race condition), that's fine
             if (error instanceof Error && error.message.includes('UNIQUE constraint')) {
                 this.logger().info(`App already exists (race condition), continuing`, { 
-                    agentId: this.state.inferenceContext.agentId 
+                    agentId 
                 });
             } else {
                 throw error;
@@ -374,8 +380,9 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         
         // Save app early to database (before blueprint generation) if it doesn't exist
         // This is a fallback - app should already exist from controller
+        // Pass agentId and userId directly from inferenceContext (state not set yet)
         try {
-            await this.saveAppEarly(query, platformServices);
+            await this.saveAppEarly(inferenceContext.agentId, inferenceContext.userId, query, platformServices);
         } catch (error) {
             this.logger().error('Failed to save app early', error);
             // Continue - app should already exist from controller

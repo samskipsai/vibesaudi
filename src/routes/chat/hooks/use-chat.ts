@@ -75,6 +75,8 @@ export function useChat({
 	const shouldReconnectRef = useRef(true);
 	// Track the latest connection attempt to avoid handling stale socket events
 	const connectAttemptIdRef = useRef(0);
+	// Track if initialization has started to prevent duplicate init() calls
+	const initStartedRef = useRef(false);
 	// Use ref to always get the latest services value
 	// Initialize with the current services value
 	const servicesRef = useRef<ServicePreferences | undefined>(services);
@@ -349,6 +351,8 @@ export function useChat({
 	const handleConnectionFailure = useCallback(
 		(wsUrl: string, disableGenerate: boolean, reason: string) => {
 			connectionStatus.current = 'failed';
+			// Reset initStartedRef on connection failure to allow retry
+			initStartedRef.current = false;
 			
 			if (retryCount.current >= maxRetries) {
 				logger.error(`💥 WebSocket connection failed permanently after ${maxRetries + 1} attempts`);
@@ -392,9 +396,25 @@ export function useChat({
 
     // No legacy wrapper; call connectWithRetry directly
 
+	// Reset initStartedRef when urlChatId changes to a different value
+	// This allows re-initialization when switching between chats
+	useEffect(() => {
+		initStartedRef.current = false;
+	}, [urlChatId]);
+
 	useEffect(() => {
 		async function init() {
-			if (!urlChatId || connectionStatus.current !== 'idle') return;
+			// Guard: Prevent duplicate initialization
+			// Check if already started, connection not idle, or no urlChatId
+			if (!urlChatId || connectionStatus.current !== 'idle' || initStartedRef.current) {
+				if (initStartedRef.current) {
+					logger.debug('Init already started, skipping duplicate call', { urlChatId });
+				}
+				return;
+			}
+
+			// Mark initialization as started immediately to prevent race conditions
+			initStartedRef.current = true;
 
 			try {
 				if (urlChatId === 'new') {
@@ -534,6 +554,8 @@ export function useChat({
 					});
 				}
 			} catch (error) {
+				// Reset initStartedRef on error to allow retry
+				initStartedRef.current = false;
 				logger.error('Error initializing code generation:', error);
 				if (error instanceof RateLimitExceededError) {
 					const rateLimitMessage = handleRateLimitError(error.details, onDebugMessage);
@@ -542,7 +564,9 @@ export function useChat({
 			}
 		}
 		init();
-	}, [urlChatId, userQuery, agentMode, userImages, services]);
+		// Removed 'services' from dependency array - it's captured via servicesRef
+		// This prevents re-initialization when services state changes
+	}, [urlChatId, userQuery, agentMode, userImages]);
 
     // Mount/unmount: enable/disable reconnection and clear pending retries
     useEffect(() => {
