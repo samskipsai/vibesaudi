@@ -72,6 +72,13 @@ export default defineConfig({
 
 	server: {
 		allowedHosts: true,
+		hmr: {
+			// Force HMR WebSocket to connect to localhost even when accessed via custom domain
+			host: 'localhost',
+			port: 8001,
+			clientPort: 8001,
+			protocol: 'ws',
+		},
 	},
 
 	// Clear cache more aggressively
