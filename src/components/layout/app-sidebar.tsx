@@ -31,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/auth-context';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { cn } from '@/lib/utils';
 import {
 	Tooltip,
@@ -94,8 +94,8 @@ function AppMenuItem({
 				tooltip={app.title}
 				className="cursor-pointer transition-opacity hover:opacity-75 pr-0"
 			>
-				<a
-					href={`/app/${app.id}`}
+				<Link
+					to={`/app/${app.id}`}
 					onClick={(e) => {
 						e.preventDefault();
 						onClick(app.id);
@@ -125,7 +125,7 @@ function AppMenuItem({
 							{formatTimestamp()}
 						</p>
 					</div>
-				</a>
+				</Link>
 			</SidebarMenuButton>
 
 			{!isCollapsed && showActions && (

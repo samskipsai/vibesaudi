@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -413,9 +414,9 @@ export const AppCard = React.memo<AppCardProps>(
 				layout
 				className={className}
 			>
-				{/* Anchor wrapper for right-click context menu support */}
-				<a
-					href={`/app/${app.id}`}
+				{/* Link wrapper for right-click context menu support */}
+				<Link
+					to={`/app/${app.id}`}
 					onClick={(e) => {
 						e.preventDefault();
 						onClick(app.id);
@@ -624,7 +625,7 @@ export const AppCard = React.memo<AppCardProps>(
 						</div>
 					</div>
 					</Card>
-				</a>
+				</Link>
 			</motion.div>
 		);
 	},

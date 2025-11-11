@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+// Trans component is available from react-i18next for complex translations with HTML
 
 import enTranslations from '../locales/en/translation.json';
 import arSATranslations from '../locales/ar-SA/translation.json';
