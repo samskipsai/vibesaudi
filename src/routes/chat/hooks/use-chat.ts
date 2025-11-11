@@ -454,11 +454,15 @@ export function useChat({
 						});
 					}
 					
+					// Get language preference
+					const language = localStorage.getItem('i18nextLng') || localStorage.getItem('user_language') || 'en';
+					
 					const response = await apiClient.createAgentSession({
 						query: userQuery,
 						agentMode,
 						images: userImages, // Pass images from URL params for multi-modal blueprint
 						services: servicesToSend, // Pass platform services preferences (undefined if none selected)
+						language: language, // Pass language preference
 					});
 
 					const parser = createRepairingJSONParser();

@@ -39,7 +39,7 @@ import { useTranslation } from 'react-i18next';
 import type { ServicePreferences } from 'worker/services/platform-services/PlatformServicesManager';
 
 export default function Chat() {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { chatId: urlChatId } = useParams();
 
 	const [searchParams] = useSearchParams();
@@ -467,11 +467,13 @@ export default function Chat() {
 			}
 
 			// When generation is active, send as conversational AI suggestion
+			const language = i18n.language || localStorage.getItem('i18nextLng') || localStorage.getItem('user_language') || 'en';
 			websocket?.send(
 				JSON.stringify({
 					type: 'user_suggestion',
 					message: newMessage,
 					images: images.length > 0 ? images : undefined,
+					language: language,
 				}),
 			);
 			sendUserMessage(newMessage);

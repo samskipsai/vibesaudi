@@ -56,6 +56,8 @@ import {
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { ByokApiKeysModal } from '@/components/byok-api-keys-modal';
+import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
 
 // Import provider logos (reusing existing pattern from BYOK modal)
 import OpenAILogo from '@/assets/provider-logos/openai.svg?react';
@@ -66,6 +68,8 @@ import CloudflareLogo from '@/assets/provider-logos/cloudflare.svg?react';
 
 export default function SettingsPage() {
 	const { user } = useAuth();
+	const { i18n } = useTranslation();
+	const [savingLanguage, setSavingLanguage] = useState(false);
 	// Active sessions state
 	const [activeSessions, setActiveSessions] = useState<
 		ActiveSessionsData & { loading: boolean }
@@ -525,6 +529,70 @@ export default function SettingsPage() {
 							Manage your account settings and preferences
 						</p>
 					</div>
+
+					{/* Language Preference Section */}
+					<Card id="language">
+						<CardHeader variant="minimal">
+							<div className="flex items-center gap-3 border-b w-full py-3 text-text-primary">
+								<Globe className="h-4 w-4" />
+								<div>
+									<CardTitle>Language Preference</CardTitle>
+								</div>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-4 px-6 mt-6">
+							<div className="space-y-2">
+								<Label htmlFor="language-select">Interface Language</Label>
+								<Select
+									value={i18n.language || 'en'}
+									onValueChange={async (value) => {
+										if (savingLanguage) return;
+										try {
+											setSavingLanguage(true);
+											await i18n.changeLanguage(value);
+											
+											// Update document direction
+											document.documentElement.dir = value === 'ar-SA' ? 'rtl' : 'ltr';
+											document.documentElement.lang = value;
+											
+											// Save to localStorage
+											localStorage.setItem('i18nextLng', value);
+											localStorage.setItem('user_language', value);
+											
+											// Save to user profile if logged in
+											if (user) {
+												try {
+													await apiClient.updateProfile({ language: value });
+												} catch (error) {
+													console.error('Failed to save language to profile:', error);
+													// Non-blocking - language is still saved in localStorage
+												}
+											}
+											
+											toast.success('Language preference saved');
+										} catch (error) {
+											console.error('Failed to change language:', error);
+											toast.error('Failed to change language');
+										} finally {
+											setSavingLanguage(false);
+										}
+									}}
+									disabled={savingLanguage}
+								>
+									<SelectTrigger id="language-select">
+										<SelectValue placeholder="Select language" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="en">English</SelectItem>
+										<SelectItem value="ar-SA">العربية (Saudi Arabic)</SelectItem>
+									</SelectContent>
+								</Select>
+								<p className="text-sm text-text-tertiary">
+									Choose your preferred language for the interface. This will also affect AI responses.
+								</p>
+							</div>
+						</CardContent>
+					</Card>
 
 					{/* Integrations Section */}
 					{/* <Card id="integrations">
