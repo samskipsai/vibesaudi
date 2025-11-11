@@ -100,7 +100,21 @@ async function handleUserAppRequest(request: Request, env: Env): Promise<Respons
 		});
 	} catch (error: any) {
 		// This block catches errors if the binding doesn't exist or if worker.fetch() fails.
-		logger.warn(`Error dispatching to worker '${appName}': ${error.message}`);
+		const errorMessage = error?.message || String(error);
+		const isWorkerNotFound = errorMessage.includes('not found') || 
+		                         errorMessage.includes('Worker not found') ||
+		                         errorMessage.includes('does not exist');
+		
+		if (isWorkerNotFound) {
+			logger.warn(`Worker '${appName}' not found in dispatch namespace`);
+			return new Response('This application is not currently available.', { status: 404 });
+		}
+		
+		logger.error(`Error dispatching to worker '${appName}': ${errorMessage}`, { 
+			hostname,
+			appName,
+			error: errorMessage 
+		});
 		return new Response('An error occurred while loading this application.', { status: 500 });
 	}
 }

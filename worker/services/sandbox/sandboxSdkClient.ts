@@ -181,13 +181,24 @@ export class SandboxSdkClient extends BaseSandboxService {
         
         // Cache miss - read from disk
         try {
-            const metadataFile = await this.getSandbox().readFile(this.getInstanceMetadataFile(instanceId));
+            const metadataFilePath = this.getInstanceMetadataFile(instanceId);
+            const metadataFile = await this.getSandbox().readFile(metadataFilePath);
+            
+            if (!metadataFile.success || !metadataFile.content) {
+                throw new Error(`Metadata file read failed or empty for instance ${instanceId}`);
+            }
+            
             const metadata = JSON.parse(metadataFile.content) as InstanceMetadata;
             this.metadataCache.set(instanceId, metadata); // Cache it
             return metadata;
         } catch (error) {
-            this.logger.error(`Failed to read instance metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            throw new Error(`Failed to read instance metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Failed to read instance metadata for ${instanceId}: ${errorMessage}`, {
+                instanceId,
+                metadataFile: this.getInstanceMetadataFile(instanceId),
+                error: errorMessage
+            });
+            throw new Error(`Failed to read instance metadata: ${errorMessage}`);
         }
     }
 
@@ -1383,10 +1394,15 @@ export class SandboxSdkClient extends BaseSandboxService {
                         
                         this.logger.info('File read successfully', { filePath });
                     } else {
-                        this.logger.error('File read failed', { filePath });
+                        const errorMsg = readResult.error || 'File read failed';
+                        this.logger.error('File read failed', { 
+                            filePath, 
+                            templateOrInstanceId,
+                            error: errorMsg 
+                        });
                         errors.push({
                             file: filePath,
-                            error: 'Failed to read file'
+                            error: errorMsg || 'Failed to read file'
                         });
                     }
                 } else {
@@ -2298,7 +2314,12 @@ export class SandboxSdkClient extends BaseSandboxService {
                     this.logger.warn(`File read failed or empty: ${filePath}`);
                 }
             } catch (error) {
-                this.logger.warn(`Failed to read file ${filePath}`, error);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                this.logger.warn(`Failed to read file ${filePath} for instance ${instanceId}`, {
+                    filePath,
+                    instanceId,
+                    error: errorMessage
+                });
             }
         }
 

@@ -11,6 +11,13 @@ declare global {
 	// Request, TextEncoder, TextDecoder, and crypto are available in Workers runtime
 	// These are part of the WebWorker lib but TypeScript needs explicit recognition
 	// They are already available in the Workers runtime, this is just for TypeScript
+	
+	// Cloudflare Workers Cache API
+	// The caches global has a 'default' property that TypeScript doesn't recognize by default
+	// Extend CacheStorage interface to include the default property
+	interface CacheStorage {
+		readonly default: Cache;
+	}
 }
 
 export {};

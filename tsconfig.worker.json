@@ -7,5 +7,6 @@
 		"lib": ["ES2023", "WebWorker"],
 		"skipLibCheck": true
 	},
-	"include": ["./worker-configuration.d.ts", "./worker/types/workers-runtime.d.ts", "./shared", "./worker"]
+	"include": ["./worker-configuration.d.ts", "./worker/types/workers-runtime.d.ts", "./shared", "./worker"],
+	"exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
 }
