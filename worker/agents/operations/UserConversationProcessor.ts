@@ -64,6 +64,7 @@ export interface UserConversationInputs {
     errors: RuntimeError[];
     projectUpdates: string[];
     images?: ProcessedImageAttachment[];
+    language?: string; // User's language preference ('en' or 'ar-SA')
 }
 
 export interface UserConversationOutputs {
@@ -279,15 +280,16 @@ export class UserConversationProcessor extends AgentOperation<UserConversationIn
 
     async execute(inputs: UserConversationInputs, options: OperationOptions): Promise<UserConversationOutputs> {
         const { env, logger, context, agent } = options;
-        const { userMessage, conversationState, errors, images, projectUpdates } = inputs;
+        const { userMessage, conversationState, errors, images, projectUpdates, language } = inputs;
         
-        // Detect language from user message
+        // Use provided language preference, or detect from user message
         const { detectLanguage, isArabic } = await import('../../utils/language-detection');
-        const detectedLanguage = detectLanguage(userMessage);
-        const isUserMessageArabic = isArabic(userMessage);
+        const detectedLanguage = language || detectLanguage(userMessage);
+        const isUserMessageArabic = isArabic(userMessage) || language === 'ar-SA';
         
         logger.info("Processing user message", { 
             messageLength: inputs.userMessage.length,
+            providedLanguage: language,
             detectedLanguage,
             isArabic: isUserMessageArabic,
             hasImages: !!images && images.length > 0,
@@ -297,7 +299,7 @@ export class UserConversationProcessor extends AgentOperation<UserConversationIn
         try {
             // Add language-specific instructions to system prompt
             let systemPrompt = SYSTEM_PROMPT;
-            if (isUserMessageArabic || detectedLanguage === 'ar-SA') {
+            if (isUserMessageArabic || detectedLanguage === 'ar-SA' || language === 'ar-SA') {
                 systemPrompt += `
 
 ## LANGUAGE INSTRUCTIONS (CRITICAL):

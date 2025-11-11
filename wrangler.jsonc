@@ -22,6 +22,10 @@
 		"enabled": true,
         "head_sampling_rate": 1,
 	},
+    // WARNING: The "unsafe" block contains experimental features that may change or break at any time.
+    // Rate limit bindings are currently only available through the unsafe configuration.
+    // These bindings are required for API and authentication rate limiting functionality.
+    // See: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
     "unsafe": {
         "bindings": [
             {

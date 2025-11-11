@@ -173,6 +173,7 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         shouldBeGenerating: false,
         reviewingInitiated: false,
         projectUpdatesAccumulator: [],
+        language: undefined,
     };
 
     /*
@@ -325,6 +326,9 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
         const { query, language, frameworks, hostname, inferenceContext, templateInfo, sandboxSessionId, services } = initArgs;
         this.initLogger(inferenceContext.agentId, sandboxSessionId, inferenceContext.userId);
         
+        // Store language preference in state
+        this.setState({ ...this.state, language: language || 'en' });
+        
         // Check if app already has platform services (provisioned in controller)
         // If not, provision them now (fallback case)
         let platformServices: PlatformServices | undefined;
@@ -420,6 +424,7 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
             templateDetails: templateInfo.templateDetails,
             sandboxInstanceId: undefined,
             generatedPhases: [],
+            language: language || 'en',
             commandsHistory: [],
             lastPackageJson: packageJson,
             sessionId: sandboxSessionId,
@@ -2630,7 +2635,7 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
      * Handle user input during conversational code generation
      * Processes user messages and updates pendingUserInputs state
      */
-    async handleUserInput(userMessage: string, images?: ImageAttachment[]): Promise<void> {
+    async handleUserInput(userMessage: string, images?: ImageAttachment[], language?: string): Promise<void> {
         try {
             this.logger().info('Processing user input message', { 
                 messageLength: userMessage.length,
@@ -2654,6 +2659,14 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                 this.logger().info('Uploaded images', { uploadedImages });
             }
 
+            // Use provided language or fall back to stored language preference or detect from message
+            const userLanguage = language || this.state.language;
+            
+            // Update state if new language is provided
+            if (language && language !== this.state.language) {
+                this.setState({ ...this.state, language });
+            }
+            
             // Process the user message using conversational assistant
             const conversationalResponse = await this.operations.processUserMessage.execute(
                 { 
@@ -2674,7 +2687,8 @@ export class SimpleCodeGeneratorAgent extends Agent<Env, CodeGenState> {
                     },
                     errors,
                     projectUpdates,
-                    images: uploadedImages
+                    images: uploadedImages,
+                    language: userLanguage
                 }, 
                 this.getOperationOptions()
             );

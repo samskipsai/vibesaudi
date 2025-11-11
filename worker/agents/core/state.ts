@@ -61,4 +61,5 @@ export interface CodeGenState {
     projectUpdatesAccumulator: string[];
     inferenceContext: InferenceContext;
     platformServices?: PlatformServices; // Provisioned platform services (D1, R2)
+    language?: string; // User's language preference ('en' or 'ar-SA')
 } 

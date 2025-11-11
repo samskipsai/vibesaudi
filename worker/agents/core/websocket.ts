@@ -170,7 +170,8 @@ export function handleWebSocketMessage(agent: SimpleCodeGeneratorAgent, connecti
                 logger.info('Received user suggestion', {
                     messageLength: parsedMessage.message?.length || 0,
                     hasImages: !!parsedMessage.images && parsedMessage.images.length > 0,
-                    imageCount: parsedMessage.images?.length || 0
+                    imageCount: parsedMessage.images?.length || 0,
+                    language: parsedMessage.language || 'not provided'
                 });
                 
                 if (!parsedMessage.message) {
@@ -194,7 +195,8 @@ export function handleWebSocketMessage(agent: SimpleCodeGeneratorAgent, connecti
                     }
                 }
                 
-                agent.handleUserInput(parsedMessage.message, parsedMessage.images).catch((error: unknown) => {
+                // Pass language preference from WebSocket message
+                agent.handleUserInput(parsedMessage.message, parsedMessage.images, parsedMessage.language).catch((error: unknown) => {
                     logger.error('Error handling user suggestion:', error);
                     sendError(connection, `Error processing user suggestion: ${error instanceof Error ? error.message : String(error)}`);
                 });

@@ -129,7 +129,7 @@
 		"@types/react": "^19.1.14",
 		"@types/react-dom": "^19.1.9",
 		"@vitejs/plugin-react-swc": "^3.11.0",
-		"drizzle-kit": "^0.31.5",
+		"drizzle-kit": "^0.31.6",
 		"eslint": "^9.36.0",
 		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-plugin-react-refresh": "^0.4.22",
@@ -149,7 +149,7 @@
 		"vite-plugin-monaco-editor": "^1.1.0",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"vitest": "^3.2.4",
-		"wrangler": "4.42.0"
+		"wrangler": "^4.47.0"
 	},
 	"prettier": {
 		"singleQuote": true,

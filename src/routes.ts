@@ -1,15 +1,27 @@
 import type { RouteObject } from 'react-router';
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 
 import App from './App';
 import Home from './routes/home';
-import Chat from './routes/chat/chat';
-import Profile from './routes/profile';
-import Settings from './routes/settings/index';
-import AppsPage from './routes/apps';
-import AppView from './routes/app';
-import DiscoverPage from './routes/discover';
 import { ProtectedRoute } from './routes/protected-route';
+
+// Lazy load heavy route components for code-splitting
+const Chat = lazy(() => import('./routes/chat/chat').then(m => ({ default: m.default })));
+const Profile = lazy(() => import('./routes/profile').then(m => ({ default: m.default })));
+const Settings = lazy(() => import('./routes/settings/index').then(m => ({ default: m.default })));
+const AppsPage = lazy(() => import('./routes/apps').then(m => ({ default: m.default })));
+const AppView = lazy(() => import('./routes/app').then(m => ({ default: m.default })));
+const DiscoverPage = lazy(() => import('./routes/discover').then(m => ({ default: m.default })));
+
+// Loading fallback component
+const RouteLoader = () => (
+	<div className="min-h-screen bg-bg-3 flex items-center justify-center">
+		<div className="text-center">
+			<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
+			<p className="text-text-tertiary">Loading...</p>
+		</div>
+	</div>
+);
 
 const routes = [
 	{
@@ -22,27 +34,57 @@ const routes = [
 			},
 			{
 				path: 'chat/:chatId',
-				Component: Chat,
+				element: (
+					<Suspense fallback={<RouteLoader />}>
+						<Chat />
+					</Suspense>
+				),
 			},
 			{
 				path: 'profile',
-				element: React.createElement(ProtectedRoute, { children: React.createElement(Profile) }),
+				element: (
+					<ProtectedRoute>
+						<Suspense fallback={<RouteLoader />}>
+							<Profile />
+						</Suspense>
+					</ProtectedRoute>
+				),
 			},
 			{
 				path: 'settings',
-				element: React.createElement(ProtectedRoute, { children: React.createElement(Settings) }),
+				element: (
+					<ProtectedRoute>
+						<Suspense fallback={<RouteLoader />}>
+							<Settings />
+						</Suspense>
+					</ProtectedRoute>
+				),
 			},
 			{
 				path: 'apps',
-				element: React.createElement(ProtectedRoute, { children: React.createElement(AppsPage) }),
+				element: (
+					<ProtectedRoute>
+						<Suspense fallback={<RouteLoader />}>
+							<AppsPage />
+						</Suspense>
+					</ProtectedRoute>
+				),
 			},
 			{
 				path: 'app/:id',
-				Component: AppView,
+				element: (
+					<Suspense fallback={<RouteLoader />}>
+						<AppView />
+					</Suspense>
+				),
 			},
 			{
 				path: 'discover',
-				Component: DiscoverPage,
+				element: (
+					<Suspense fallback={<RouteLoader />}>
+						<DiscoverPage />
+					</Suspense>
+				),
 			},
 		],
 	},
