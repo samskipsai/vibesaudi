@@ -14,17 +14,8 @@ export default defineConfig({
 		exclude: ['format', 'editor.all'],
 		include: ['monaco-editor/esm/vs/editor/editor.api'],
 		force: true, // Force re-optimization on every start
+		// Note: esbuildOptions is deprecated, use build.rollupOptions for chunk splitting instead
 	},
-
-	// build: {
-	//     rollupOptions: {
-	//       output: {
-	//             advancedChunks: {
-	//                 groups: [{name: 'vendor', test: /node_modules/}]
-	//             }
-	//         }
-	//     }
-	// },
 	plugins: [
 		react(),
 		svgr(),
@@ -85,5 +76,31 @@ export default defineConfig({
 
 	build: {
 		sourcemap: true,
+		chunkSizeWarningLimit: 1000, // Warn for chunks larger than 1MB
+		rollupOptions: {
+			output: {
+				manualChunks: (id) => {
+					// Separate Monaco Editor into its own chunk
+					if (id.includes('monaco-editor')) {
+						return 'monaco-editor';
+					}
+					// Separate large UI libraries
+					if (id.includes('framer-motion')) {
+						return 'framer-motion';
+					}
+					// Separate React and React DOM
+					if (id.includes('react-dom')) {
+						return 'react-dom';
+					}
+					if (id.includes('react') && !id.includes('react-dom')) {
+						return 'react';
+					}
+					// Vendor chunk for other node_modules
+					if (id.includes('node_modules')) {
+						return 'vendor';
+					}
+				},
+			},
+		},
 	},
 });

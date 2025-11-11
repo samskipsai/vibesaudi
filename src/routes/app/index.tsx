@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import type { AppDetailsData, FileType } from '@/api-types';
 import { apiClient, ApiError } from '@/lib/api-client';
@@ -24,7 +24,6 @@ import {
 	Github,
 	Database,
 } from 'lucide-react';
-import { MonacoEditor } from '@/components/monaco-editor/monaco-editor';
 import { getFileType } from '@/utils/string';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,10 +40,20 @@ import { toggleFavorite } from '@/hooks/use-apps';
 import { formatDistanceToNow, isValid } from 'date-fns';
 import { toast } from 'sonner';
 import { capitalizeFirstLetter, cn, getPreviewUrl } from '@/lib/utils';
-import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { PreviewIframe } from '../chat/components/preview-iframe';
 import { PlatformServicesView } from './components/platform-services';
+
+// Lazy load heavy components for code-splitting
+const MonacoEditor = lazy(() => import('@/components/monaco-editor/monaco-editor').then(m => ({ default: m.MonacoEditor })));
+const PreviewIframe = lazy(() => import('../chat/components/preview-iframe').then(m => ({ default: m.PreviewIframe })));
+const ConfirmDeleteDialog = lazy(() => import('@/components/shared/ConfirmDeleteDialog').then(m => ({ default: m.ConfirmDeleteDialog })));
+
+// Loading fallback for lazy components
+const ComponentLoader = () => (
+	<div className="flex items-center justify-center h-full min-h-[200px]">
+		<Loader2 className="h-6 w-6 animate-spin text-accent" />
+	</div>
+);
 
 // Use proper types from API types
 type AppDetails = AppDetailsData;
@@ -819,12 +828,14 @@ export default function AppView() {
 							<CardContent className="p-0">
 								<div className="border-t relative">
 									{appUrl ? (
-										<PreviewIframe
-											ref={previewIframeRef}
-											src={appUrl}
-											className="w-full h-[600px] lg:h-[800px]"
-											title={`${app.title} Preview`}
-										/>
+										<Suspense fallback={<ComponentLoader />}>
+											<PreviewIframe
+												ref={previewIframeRef}
+												src={appUrl}
+												className="w-full h-[600px] lg:h-[800px]"
+												title={`${app.title} Preview`}
+											/>
+										</Suspense>
 									) : (
 										<div className="relative w-full h-[400px] bg-gray-50 flex items-center justify-center">
 											{/* Frosted glass overlay */}
@@ -975,25 +986,27 @@ export default function AppView() {
 														</div>
 
 														<div className="flex-1 min-h-0">
-															<MonacoEditor
-																className="h-full"
-																createOptions={{
-																	value: activeFile.fileContents,
-																	language:
-																		activeFile.language ||
-																		'plaintext',
-																	readOnly: true,
-																	minimap: {
-																		enabled: false,
-																	},
-																	lineNumbers:
-																		'on',
-																	scrollBeyondLastLine: false,
-																	fontSize: 13,
-																	theme: 'v1-dev',
-																	automaticLayout: true,
-																}}
-															/>
+															<Suspense fallback={<ComponentLoader />}>
+																<MonacoEditor
+																	className="h-full"
+																	createOptions={{
+																		value: activeFile.fileContents,
+																		language:
+																			activeFile.language ||
+																			'plaintext',
+																		readOnly: true,
+																		minimap: {
+																			enabled: false,
+																		},
+																		lineNumbers:
+																			'on',
+																		scrollBeyondLastLine: false,
+																		fontSize: 13,
+																		theme: 'v1-dev',
+																		automaticLayout: true,
+																	}}
+																/>
+															</Suspense>
 														</div>
 													</>
 												) : (
@@ -1095,13 +1108,17 @@ export default function AppView() {
 			</div>
 
 			{/* Delete Confirmation Dialog */}
-			<ConfirmDeleteDialog
-				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
-				onConfirm={handleDeleteApp}
-				isLoading={isDeleting}
-				appTitle={app?.title}
-			/>
+			{isDeleteDialogOpen && (
+				<Suspense fallback={null}>
+					<ConfirmDeleteDialog
+						open={isDeleteDialogOpen}
+						onOpenChange={setIsDeleteDialogOpen}
+						onConfirm={handleDeleteApp}
+						isLoading={isDeleting}
+						appTitle={app?.title}
+					/>
+				</Suspense>
+			)}
 		</div>
 	);
 }

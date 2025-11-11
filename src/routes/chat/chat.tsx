@@ -4,18 +4,18 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	lazy,
+	Suspense,
 	type FormEvent,
 } from 'react';
 import { ArrowRight, Image as ImageIcon } from 'react-feather';
 import { useParams, useSearchParams, useNavigate } from 'react-router';
-import { MonacoEditor } from '../../components/monaco-editor/monaco-editor';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Expand, Github, LoaderCircle, RefreshCw } from 'lucide-react';
 import { Blueprint } from './components/blueprint';
 import { FileExplorer } from './components/file-explorer';
 import { UserMessage, AIMessage } from './components/messages';
 import { PhaseTimeline } from './components/phase-timeline';
-import { PreviewIframe } from './components/preview-iframe';
 import { ViewModeSwitch } from './components/view-mode-switch';
 import { DebugPanel, type DebugMessage } from './components/debug-panel';
 import { DeploymentControls } from './components/deployment-controls';
@@ -27,7 +27,6 @@ import { logger } from '@/utils/logger';
 import { useApp } from '@/hooks/use-app';
 import { AgentModeDisplay } from '@/components/agent-mode-display';
 import { useGitHubExport } from '@/hooks/use-github-export';
-import { GitHubExportModal } from '@/components/github-export-modal';
 import { ModelConfigInfo } from './components/model-config-info';
 import { useAutoScroll } from '@/hooks/use-auto-scroll';
 import { useImageUpload } from '@/hooks/use-image-upload';
@@ -36,6 +35,19 @@ import { ImageAttachmentPreview } from '@/components/image-attachment-preview';
 import { createAIMessage } from './utils/message-helpers';
 import { ServiceSelection } from './components/service-selection';
 import { useTranslation } from 'react-i18next';
+
+// Lazy load heavy components for code-splitting
+const MonacoEditor = lazy(() => import('../../components/monaco-editor/monaco-editor').then(m => ({ default: m.MonacoEditor })));
+const PreviewIframe = lazy(() => import('./components/preview-iframe').then(m => ({ default: m.PreviewIframe })));
+const GitHubExportModal = lazy(() => import('@/components/github-export-modal').then(m => ({ default: m.GitHubExportModal })));
+
+// Loading fallback for lazy components
+const ComponentLoader = () => (
+	<div className="flex items-center justify-center h-full min-h-[200px]">
+		<LoaderCircle className="h-6 w-6 animate-spin text-accent" />
+	</div>
+);
+
 import type { ServicePreferences } from 'worker/services/platform-services/PlatformServicesManager';
 
 export default function Chat() {
@@ -865,19 +877,21 @@ export default function Chat() {
 											</button>
 										</div>
 									</div>
-									<PreviewIframe
-										src={previewUrl}
-										ref={previewRef}
-										className="flex-1 w-full h-full border-0"
-										title="Preview"
-										shouldRefreshPreview={
-											shouldRefreshPreview
-										}
-										manualRefreshTrigger={
-											manualRefreshTrigger
-										}
-										webSocket={websocket}
-									/>
+									<Suspense fallback={<ComponentLoader />}>
+										<PreviewIframe
+											src={previewUrl}
+											ref={previewRef}
+											className="flex-1 w-full h-full border-0"
+											title="Preview"
+											shouldRefreshPreview={
+												shouldRefreshPreview
+											}
+											manualRefreshTrigger={
+												manualRefreshTrigger
+											}
+											webSocket={websocket}
+										/>
+									</Suspense>
 								</div>
 							)}
 
@@ -1068,40 +1082,42 @@ export default function Chat() {
 												onFileClick={handleFileClick}
 											/>
 											<div className="flex-1">
-												<MonacoEditor
-													className="h-full"
-													createOptions={{
-														value:
-															activeFile?.fileContents ||
-															'',
-														language:
-															activeFile?.language ||
-															'plaintext',
-														readOnly: true,
-														minimap: {
-															enabled: false,
-														},
-														lineNumbers: 'on',
-														scrollBeyondLastLine: false,
-														fontSize: 13,
-														theme: 'v1-dev',
-														automaticLayout: true,
-													}}
-													find={
-														edit &&
-														edit.filePath ===
-															activeFile?.filePath
-															? edit.search
-															: undefined
-													}
-													replace={
-														edit &&
-														edit.filePath ===
-															activeFile?.filePath
-															? edit.replacement
-															: undefined
-													}
-												/>
+												<Suspense fallback={<ComponentLoader />}>
+													<MonacoEditor
+														className="h-full"
+														createOptions={{
+															value:
+																activeFile?.fileContents ||
+																'',
+															language:
+																activeFile?.language ||
+																'plaintext',
+															readOnly: true,
+															minimap: {
+																enabled: false,
+															},
+															lineNumbers: 'on',
+															scrollBeyondLastLine: false,
+															fontSize: 13,
+															theme: 'v1-dev',
+															automaticLayout: true,
+														}}
+														find={
+															edit &&
+															edit.filePath ===
+																activeFile?.filePath
+																? edit.search
+																: undefined
+														}
+														replace={
+															edit &&
+															edit.filePath ===
+																activeFile?.filePath
+																? edit.replacement
+																: undefined
+														}
+													/>
+												</Suspense>
 											</div>
 										</div>
 									</div>
@@ -1120,15 +1136,19 @@ export default function Chat() {
 			/>
 
 			{/* GitHub Export Modal */}
-			<GitHubExportModal
-				isOpen={githubExport.isModalOpen}
-				onClose={githubExport.closeModal}
-				onExport={githubExport.startExport}
-				isExporting={githubExport.isExporting}
-				exportProgress={githubExport.progress}
-				exportResult={githubExport.result}
-				onRetry={githubExport.retry}
-			/>
+			{githubExport.isModalOpen && (
+				<Suspense fallback={null}>
+					<GitHubExportModal
+						isOpen={githubExport.isModalOpen}
+						onClose={githubExport.closeModal}
+						onExport={githubExport.startExport}
+						isExporting={githubExport.isExporting}
+						exportProgress={githubExport.progress}
+						exportResult={githubExport.result}
+						onRetry={githubExport.retry}
+					/>
+				</Suspense>
+			)}
 		</div>
 	);
 }

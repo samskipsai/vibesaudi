@@ -1,230 +1,296 @@
 # Build Environment Setup Guide
 
-## Secure Docker Credential Storage
+This guide provides step-by-step instructions for configuring a secure build environment, including Docker credential management for CI/CD pipelines.
 
-This guide explains how to configure Docker credential helpers on a Linux system to securely store Docker login credentials, eliminating the security warning about unencrypted credentials.
+## Docker Credential Helper Configuration
 
-## Overview
+Storing Docker credentials in plain text is a security risk. This guide explains how to use Docker's credential helper to securely store login credentials on Linux-based systems.
 
-By default, Docker stores credentials in plain text in `~/.docker/config.json`. This is a security risk, especially in CI/CD environments. Docker credential helpers allow you to store credentials securely using system keyrings or other secure storage mechanisms.
+### Prerequisites
 
-## Prerequisites
+- Docker installed on your system
+- Access to the Docker registry you need to authenticate with
+- Root or sudo access (for system-wide configuration)
 
-- Linux system (Ubuntu/Debian recommended)
-- Docker installed and configured
-- Root or sudo access (for system-wide installation)
+### Step 1: Install Docker Credential Helper
 
-## Step-by-Step Setup
+The Docker credential helper stores credentials securely using your system's keyring or a secure file.
 
-### Option 1: Using Docker Credential Helper (Recommended)
+#### Option A: Using Docker Credential Helper (Recommended)
 
-#### Step 1: Install Docker Credential Helper
+1. **Download the credential helper binary:**
 
-For Ubuntu/Debian:
-```bash
-sudo apt-get update
-sudo apt-get install -y docker-credential-helper
-```
-
-For other distributions, check your package manager or install from source:
-```bash
-# Download the latest release
-curl -L https://github.com/docker/docker-credential-helpers/releases/download/v0.8.0/docker-credential-secretservice-v0.8.0-amd64.tar.gz | tar -xz
-sudo mv docker-credential-secretservice /usr/local/bin/
-sudo chmod +x /usr/local/bin/docker-credential-secretservice
-```
-
-#### Step 2: Configure Docker to Use the Credential Helper
-
-Edit or create `~/.docker/config.json`:
-
-```bash
-mkdir -p ~/.docker
-cat > ~/.docker/config.json << EOF
-{
-  "auths": {},
-  "credHelpers": {
-    "registry.cloudflare.com": "secretservice"
-  }
-}
-EOF
-```
-
-For system-wide configuration (recommended for CI/CD):
-```bash
-sudo mkdir -p /etc/docker
-sudo tee /etc/docker/config.json << EOF
-{
-  "auths": {},
-  "credHelpers": {
-    "registry.cloudflare.com": "secretservice"
-  }
-}
-EOF
-```
-
-#### Step 3: Login to Docker Registry
-
-After configuration, login normally:
-```bash
-docker login registry.cloudflare.com
-```
-
-The credentials will now be stored securely using the system keyring instead of plain text.
-
-### Option 2: Using Pass (Password Store)
-
-#### Step 1: Install Pass
-
-```bash
-sudo apt-get install -y pass docker-credential-helpers
-```
-
-#### Step 2: Initialize GPG Key (if not already done)
-
-```bash
-gpg --generate-key
-# Follow the prompts to create a GPG key
-```
-
-#### Step 3: Initialize Pass
-
-```bash
-pass init <your-email@example.com>
-```
-
-#### Step 4: Install Docker Credential Helper for Pass
-
-```bash
-# Download docker-credential-pass
-curl -L https://github.com/docker/docker-credential-helpers/releases/download/v0.8.0/docker-credential-pass-v0.8.0-amd64.tar.gz | tar -xz
-sudo mv docker-credential-pass /usr/local/bin/
-sudo chmod +x /usr/local/bin/docker-credential-pass
-```
-
-#### Step 5: Configure Docker
-
-```bash
-cat > ~/.docker/config.json << EOF
-{
-  "auths": {},
-  "credHelpers": {
-    "registry.cloudflare.com": "pass"
-  }
-}
-EOF
-```
-
-### Option 3: Using Environment Variables (CI/CD)
-
-For CI/CD environments, you can use environment variables instead of credential helpers:
-
-```bash
-# Set Docker credentials as environment variables
-export DOCKER_USERNAME="your-username"
-export DOCKER_PASSWORD="your-password"
-
-# Login using environment variables
-echo "$DOCKER_PASSWORD" | docker login registry.cloudflare.com -u "$DOCKER_USERNAME" --password-stdin
-```
-
-**Note:** Ensure these environment variables are stored securely in your CI/CD system's secret management (e.g., GitHub Secrets, GitLab CI Variables, etc.).
-
-## Verification
-
-After setup, verify that credentials are stored securely:
-
-1. Check that `~/.docker/config.json` no longer contains plain text credentials:
    ```bash
-   cat ~/.docker/config.json
+   # For Linux (amd64)
+   curl -L https://github.com/docker/docker-credential-helpers/releases/download/v0.8.0/docker-credential-secretservice-v0.8.0.linux-amd64 -o docker-credential-secretservice
+   
+   # Make it executable
+   chmod +x docker-credential-secretservice
+   
+   # Move to a directory in your PATH (e.g., /usr/local/bin)
+   sudo mv docker-credential-secretservice /usr/local/bin/
    ```
-   You should see `"credHelpers"` instead of `"auths"` with base64-encoded credentials.
 
-2. Test Docker login:
+2. **Verify installation:**
+
+   ```bash
+   docker-credential-secretservice version
+   ```
+
+#### Option B: Using pass (Password Store)
+
+If you prefer using `pass` (the standard unix password manager):
+
+1. **Install pass:**
+
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install -y pass
+   
+   # CentOS/RHEL
+   sudo yum install -y pass
+   ```
+
+2. **Initialize pass (if not already done):**
+
+   ```bash
+   gpg --generate-key  # If you don't have a GPG key
+   pass init "your-email@example.com"
+   ```
+
+3. **Install docker-credential-pass:**
+
+   ```bash
+   curl -L https://github.com/docker/docker-credential-helpers/releases/download/v0.8.0/docker-credential-pass-v0.8.0.linux-amd64 -o docker-credential-pass
+   chmod +x docker-credential-pass
+   sudo mv docker-credential-pass /usr/local/bin/
+   ```
+
+### Step 2: Configure Docker to Use Credential Helper
+
+1. **Create or edit Docker configuration file:**
+
+   ```bash
+   mkdir -p ~/.docker
+   nano ~/.docker/config.json
+   ```
+
+2. **Add credential helper configuration:**
+
+   For secretservice (Option A):
+   ```json
+   {
+     "credsStore": "secretservice"
+   }
+   ```
+
+   For pass (Option B):
+   ```json
+   {
+     "credsStore": "pass"
+   }
+   ```
+
+   **Note:** For system-wide configuration (affecting all users), edit `/etc/docker/config.json` instead.
+
+### Step 3: Login to Docker Registry
+
+1. **Login using standard Docker login command:**
+
+   ```bash
+   docker login <registry-url>
+   ```
+
+   Example:
    ```bash
    docker login registry.cloudflare.com
+   docker login docker.io
    ```
-   If already logged in, you should see a success message without being prompted.
 
-3. Verify credential helper is working:
+2. **Enter your credentials when prompted:**
+   - Username
+   - Password or access token
+
+3. **Verify credentials are stored:**
+
    ```bash
-   docker-credential-secretservice list
-   # or
-   docker-credential-pass list
+   # Check that credentials are stored (should not show plain text)
+   cat ~/.docker/config.json
    ```
 
-## CI/CD Integration
+   The file should only contain:
+   ```json
+   {
+     "credsStore": "secretservice"
+   }
+   ```
 
-### GitHub Actions
+   Your actual credentials will be stored securely in the system keyring, not in this file.
 
-Add to your workflow file:
-```yaml
-- name: Configure Docker credentials
-  run: |
-    mkdir -p ~/.docker
-    echo '{"auths":{},"credHelpers":{"registry.cloudflare.com":"secretservice"}}' > ~/.docker/config.json
+### Step 4: Verify Secure Storage
 
-- name: Login to Docker Registry
-  run: |
-    echo "${{ secrets.DOCKER_PASSWORD }}" | docker login registry.cloudflare.com -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+1. **Test that credentials work:**
+
+   ```bash
+   docker pull <private-image>
+   ```
+
+2. **Verify credentials are not in plain text:**
+
+   ```bash
+   # This should NOT show your password
+   cat ~/.docker/config.json
+   
+   # Check keyring (for secretservice)
+   secret-tool search docker-credential
+   ```
+
+### Step 5: CI/CD Configuration
+
+For CI/CD environments, you have several options:
+
+#### Option A: Use Environment Variables (Temporary)
+
+For CI/CD pipelines, you can use environment variables that are only available during the build:
+
+```bash
+# In your CI/CD pipeline configuration
+export DOCKER_USERNAME="your-username"
+export DOCKER_PASSWORD="your-password-or-token"
+
+# Login using environment variables
+echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin <registry-url>
 ```
 
-### GitLab CI
+**Security Note:** Ensure your CI/CD platform securely stores these as secrets/environment variables, not in plain text in your repository.
 
-Add to your `.gitlab-ci.yml`:
+#### Option B: Use CI/CD Secret Management
+
+Most CI/CD platforms provide secure secret management:
+
+**GitHub Actions:**
+```yaml
+- name: Login to Docker Registry
+  uses: docker/login-action@v3
+  with:
+    registry: registry.cloudflare.com
+    username: ${{ secrets.DOCKER_USERNAME }}
+    password: ${{ secrets.DOCKER_PASSWORD }}
+```
+
+**GitLab CI:**
 ```yaml
 before_script:
-  - mkdir -p ~/.docker
-  - echo '{"auths":{},"credHelpers":{"registry.cloudflare.com":"secretservice"}}' > ~/.docker/config.json
-  - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+  - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 ```
 
-## Troubleshooting
-
-### Issue: Credential helper not found
-
-**Solution:** Ensure the credential helper binary is in your PATH:
+**Cloudflare Pages/Workers:**
+Use Wrangler secrets:
 ```bash
+wrangler secret put DOCKER_USERNAME
+wrangler secret put DOCKER_PASSWORD
+```
+
+### Step 6: Remove Plain Text Credentials
+
+If you previously stored credentials in plain text:
+
+1. **Remove old credential files:**
+
+   ```bash
+   # Remove old auth config (if exists)
+   rm ~/.docker/config.json
+   
+   # Or edit and remove the "auths" section
+   nano ~/.docker/config.json
+   ```
+
+2. **Re-login to regenerate secure storage:**
+
+   ```bash
+   docker login <registry-url>
+   ```
+
+### Troubleshooting
+
+#### Issue: Credential helper not found
+
+**Solution:**
+```bash
+# Verify the binary is in PATH
 which docker-credential-secretservice
-# If not found, add to PATH or use full path
+
+# Add to PATH if needed
 export PATH=$PATH:/usr/local/bin
 ```
 
-### Issue: Permission denied
+#### Issue: Permission denied
 
-**Solution:** Ensure the credential helper has execute permissions:
+**Solution:**
 ```bash
+# Ensure binary is executable
 chmod +x /usr/local/bin/docker-credential-secretservice
+
+# Check file ownership
+ls -l /usr/local/bin/docker-credential-secretservice
 ```
 
-### Issue: Keyring not accessible
+#### Issue: Keyring not accessible
 
-**Solution:** For headless systems (CI/CD), you may need to use environment variables or a different credential helper:
+**Solution:**
 ```bash
-# Use pass or file-based storage for headless systems
-export DOCKER_CREDENTIAL_HELPER="pass"
+# For secretservice, ensure DBus is running
+sudo systemctl start dbus
+
+# For pass, ensure GPG agent is running
+gpg-agent --daemon
 ```
 
-## Security Best Practices
+#### Issue: CI/CD pipeline can't access credentials
 
-1. **Never commit credentials** to version control
-2. **Use credential helpers** in all environments (development, staging, production)
-3. **Rotate credentials regularly** (every 90 days recommended)
-4. **Use least-privilege access** - only grant necessary permissions
-5. **Monitor credential usage** through audit logs
-6. **Use separate credentials** for different environments
+**Solution:**
+- Use environment variables or CI/CD secret management instead of credential helpers
+- Credential helpers require interactive keyring access, which may not be available in CI/CD environments
 
-## Additional Resources
+### Security Best Practices
+
+1. **Never commit credentials to version control:**
+   - Add `~/.docker/config.json` to `.gitignore` if it contains plain text
+   - Use credential helpers or CI/CD secrets instead
+
+2. **Use access tokens instead of passwords:**
+   - Generate registry-specific access tokens
+   - Tokens can be scoped and revoked easily
+
+3. **Rotate credentials regularly:**
+   ```bash
+   # Remove old credentials
+   docker logout <registry-url>
+   
+   # Login with new credentials
+   docker login <registry-url>
+   ```
+
+4. **Use least privilege:**
+   - Create tokens with minimal required permissions
+   - Use different tokens for different environments (dev, staging, prod)
+
+5. **Monitor credential usage:**
+   - Review registry access logs regularly
+   - Set up alerts for unusual access patterns
+
+### Additional Resources
 
 - [Docker Credential Helpers Documentation](https://docs.docker.com/engine/reference/commandline/login/#credential-helpers)
-- [Docker Credential Helpers GitHub](https://github.com/docker/docker-credential-helpers)
-- [Cloudflare Container Registry Documentation](https://developers.cloudflare.com/workers/configuration/containers/container-registry/)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+- [OWASP Docker Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html)
 
-## Support
+### Summary
 
-If you encounter issues with credential storage setup, please:
-1. Check the troubleshooting section above
-2. Review Docker and credential helper logs
-3. Consult your system administrator for keyring access issues
-4. Refer to the official Docker documentation
+By following this guide, you will:
+- ✅ Store Docker credentials securely using system keyring
+- ✅ Avoid plain text credential storage
+- ✅ Configure CI/CD pipelines with secure credential management
+- ✅ Follow security best practices for credential handling
 
+If you encounter any issues, refer to the troubleshooting section or consult the official Docker documentation.

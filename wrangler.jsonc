@@ -22,10 +22,32 @@
 		"enabled": true,
         "head_sampling_rate": 1,
 	},
-    // WARNING: The "unsafe" block contains experimental features that may change or break at any time.
-    // Rate limit bindings are currently only available through the unsafe configuration.
-    // These bindings are required for API and authentication rate limiting functionality.
-    // See: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+    /**
+     * WARNING: The "unsafe" block contains experimental features that may change or break at any time.
+     * 
+     * Rate Limit Bindings:
+     * Rate limit bindings are currently only available through the unsafe configuration block.
+     * As of 2024, Cloudflare Workers does not provide a stable, non-experimental API for rate limit bindings.
+     * 
+     * These bindings are required for:
+     * - API rate limiting (10,000 requests per 60 seconds)
+     * - Authentication rate limiting (1,000 requests per 60 seconds)
+     * 
+     * Official Documentation:
+     * - https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
+     * - https://developers.cloudflare.com/workers/configuration/bindings/rate-limit-bindings/
+     * 
+     * Migration Path:
+     * When stable rate limit bindings become available, this configuration should be migrated
+     * to the stable API. Monitor Cloudflare's changelog for updates:
+     * https://developers.cloudflare.com/workers/changelog/
+     * 
+     * Alternative Approaches:
+     * If you need to avoid experimental features, consider using:
+     * - Durable Objects for custom rate limiting logic
+     * - Cloudflare's Rate Limiting Rules (requires Cloudflare Pro plan or higher)
+     * - External rate limiting services
+     */
     "unsafe": {
         "bindings": [
             {
