@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router';
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 
 import App from './App';
 import Home from './routes/home';
