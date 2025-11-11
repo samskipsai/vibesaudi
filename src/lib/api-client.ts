@@ -162,6 +162,13 @@ class ApiClient {
 	}
 
 	/**
+	 * Get language preference from localStorage or default to 'en'
+	 */
+	private getLanguagePreference(): string {
+		return localStorage.getItem('i18nextLng') || localStorage.getItem('user_language') || 'en';
+	}
+
+	/**
 	 * Get authentication headers for API requests
 	 */
 	private getAuthHeaders(): Record<string, string> {
@@ -320,11 +327,13 @@ class ApiClient {
 		}
 
 		const url = `${this.baseUrl}${endpoint}`;
+		const language = this.getLanguagePreference();
 		const config: RequestInit = {
 			method: options.method || 'GET',
 			headers: {
 				...this.defaultHeaders,
 				...this.getAuthHeaders(),
+				'Accept-Language': language,
 				...options.headers,
 			},
 			credentials: options.credentials || 'include',

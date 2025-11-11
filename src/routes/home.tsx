@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { ArrowRight, Info } from 'react-feather';
 import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/auth-context';
+import { useTranslation } from 'react-i18next';
 import {
 	AgentModeToggle,
 	type AgentMode,
@@ -18,6 +19,7 @@ import { ImageAttachmentPreview } from '@/components/image-attachment-preview';
 import { SUPPORTED_IMAGE_MIME_TYPES } from '@/api-types';
 
 export default function Home() {
+	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const { requireAuth } = useAuthGuard();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -39,10 +41,10 @@ export default function Home() {
 
 
 	const placeholderPhrases = useMemo(() => [
-		"todo list app",
-		"F1 fantasy game",
-		"personal finance tracker"
-	], []);
+		t('home.placeholderPhrases.todo'),
+		t('home.placeholderPhrases.f1'),
+		t('home.placeholderPhrases.finance')
+	], [t]);
 	const [currentPlaceholderPhraseIndex, setCurrentPlaceholderPhraseIndex] = useState(0);
 	const [currentPlaceholderText, setCurrentPlaceholderText] = useState("");
 	const [isPlaceholderTyping, setIsPlaceholderTyping] = useState(true);
@@ -171,7 +173,7 @@ export default function Home() {
 							discoverReady ? "mt-48" : "mt-[20vh] sm:mt-[24vh] md:mt-[28vh]"
 						)}>
 						<h1 className="text-shadow-sm text-shadow-red-200 dark:text-shadow-red-900 text-accent font-medium leading-[1.1] tracking-tight text-5xl w-full mb-4 bg-clip-text bg-gradient-to-r from-text-primary to-text-primary/90">
-							What should we build today?
+							{t('home.title')}
 						</h1>
 
 						<form
@@ -192,14 +194,14 @@ export default function Home() {
 							>
 								{isDragging && (
 									<div className="absolute inset-0 flex items-center justify-center bg-accent/10 backdrop-blur-sm rounded-lg z-30 pointer-events-none">
-										<p className="text-accent font-medium">Drop images here</p>
+										<p className="text-accent font-medium">{t('home.dropImages')}</p>
 									</div>
 								)}
 								<textarea
 									className="w-full resize-none ring-0 z-20 outline-0 placeholder:text-text-primary/60 text-text-primary"
 									name="query"
 									value={query}
-									placeholder={`Create a ${currentPlaceholderText}`}
+									placeholder={t('home.placeholder', { phrase: currentPlaceholderText })}
 									ref={textareaRef}
 									onChange={(e) => {
 										setQuery(e.target.value);

@@ -1,0 +1,80 @@
+{
+	"common": {
+		"loading": "Loading...",
+		"error": "Error",
+		"success": "Success",
+		"cancel": "Cancel",
+		"save": "Save",
+		"delete": "Delete",
+		"edit": "Edit",
+		"close": "Close",
+		"submit": "Submit",
+		"confirm": "Confirm",
+		"back": "Back",
+		"next": "Next",
+		"previous": "Previous",
+		"upload": "Upload",
+		"download": "Download",
+		"search": "Search",
+		"filter": "Filter",
+		"settings": "Settings",
+		"profile": "Profile",
+		"logout": "Logout",
+		"login": "Login",
+		"register": "Register",
+		"language": "Language"
+	},
+	"home": {
+		"title": "What should we build today?",
+		"placeholder": "Create a {{phrase}}",
+		"dropImages": "Drop images here",
+		"createApp": "Create App",
+		"placeholderPhrases": {
+			"todo": "todo list app",
+			"f1": "F1 fantasy game",
+			"finance": "personal finance tracker"
+		}
+	},
+	"chat": {
+		"placeholder": {
+			"waiting": "Please wait for blueprint completion...",
+			"generating": "Chat with AI while generating...",
+			"followUp": "Ask a follow up..."
+		},
+		"uploadImage": "Upload image",
+		"send": "Send",
+		"thinking": "Thinking..."
+	},
+	"auth": {
+		"welcomeBack": "Welcome back",
+		"signIn": "Sign in {{context}}",
+		"createAccount": "Create an account",
+		"joinToStart": "Join to start building amazing applications",
+		"signInToSave": "Sign in to save your apps and access your workspace",
+		"authRequired": "Authentication required for this action",
+		"signInWith": "Sign in with {{provider}}",
+		"or": "or",
+		"email": "Email",
+		"password": "Password",
+		"forgotPassword": "Forgot password?",
+		"dontHaveAccount": "Don't have an account?",
+		"alreadyHaveAccount": "Already have an account?",
+		"signUp": "Sign up",
+		"signInButton": "Sign in"
+	},
+	"settings": {
+		"title": "Settings",
+		"general": "General",
+		"appearance": "Appearance",
+		"language": "Language",
+		"preferences": "Preferences"
+	},
+	"errors": {
+		"generic": "Something went wrong",
+		"network": "Network error. Please check your connection.",
+		"unauthorized": "You need to sign in to continue",
+		"notFound": "Not found",
+		"serverError": "Server error. Please try again later."
+	}
+}
+

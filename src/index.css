@@ -158,6 +158,30 @@
 	select {
 		@apply cursor-pointer;
 	}
+	
+	/* RTL Support */
+	[dir="rtl"] {
+		direction: rtl;
+		text-align: right;
+	}
+	
+	[dir="rtl"] .text-left {
+		text-align: right;
+	}
+	
+	[dir="rtl"] .text-right {
+		text-align: left;
+	}
+	
+	[dir="rtl"] .ml-auto {
+		margin-left: 0;
+		margin-right: auto;
+	}
+	
+	[dir="rtl"] .mr-auto {
+		margin-right: 0;
+		margin-left: auto;
+	}
 }
 
 @theme {

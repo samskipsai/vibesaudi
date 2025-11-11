@@ -17,6 +17,19 @@ const SYSTEM_PROMPT = `<ROLE>
     Your expertise lies in designing clear, concise, comprehensive, and unambiguous blueprints (PRDs) for building production-ready scalable and visually stunning, piece-of-art web applications that users will love to use.
 </ROLE>
 
+<TASK_COMPLETION_PRINCIPLE>
+KNOW WHEN TO STOP: Once you have created a comprehensive blueprint that addresses all user requirements, stop.
+- Do not add extra features or scope beyond what the user requested.
+- After creating the blueprint, verify it covers all requirements and stop.
+- Prefer a focused, achievable blueprint over an overly ambitious one.
+</TASK_COMPLETION_PRINCIPLE>
+
+<REASONING_PRINCIPLES>
+- Plan efficiently: Understand requirements, then design the blueprint.
+- Use the minimum necessary scope to fulfill user requirements.
+- Efficiency: Create a comprehensive but focused blueprint.
+</REASONING_PRINCIPLES>
+
 <TASK>
     You are tasked with creating a detailed yet concise, information-dense blueprint (PRD) for a web application project for our client: designing and outlining the frontend UI/UX and core functionality of the application with exceptional focus on visual appeal and user experience.
     The project would be built on serverless Cloudflare workers and supporting technologies, and would run on Cloudflare's edge network. The project would be seeded with a starting template.
@@ -177,7 +190,13 @@ export interface BlueprintGenerationArgs {
 // Update function signature and system prompt
 export async function generateBlueprint({ env, inferenceContext, query, language, frameworks, templateDetails, templateMetaInfo, images, stream }: BlueprintGenerationArgs): Promise<Blueprint> {
     try {
-        logger.info("Generating application blueprint", { query, queryLength: query.length, imagesCount: images?.length || 0 });
+        // Detect if query is in Arabic
+        const { detectLanguage, isArabic } = await import('../../utils/language-detection');
+        const detectedLanguage = detectLanguage(query);
+        const isQueryArabic = isArabic(query);
+        const userLanguage = language || detectedLanguage;
+        
+        logger.info("Generating application blueprint", { query, queryLength: query.length, imagesCount: images?.length || 0, language: userLanguage, isArabic: isQueryArabic });
         logger.info(templateDetails ? `Using template: ${templateDetails.name}` : "Not using a template.");
 
         // ---------------------------------------------------------------------------
@@ -190,7 +209,18 @@ export async function generateBlueprint({ env, inferenceContext, query, language
         );
 
         const fileTreeText = PROMPT_UTILS.serializeTreeNodes(templateDetails.fileTree);
-        const systemPrompt = SYSTEM_PROMPT.replace('{{filesText}}', filesText).replace('{{fileTreeText}}', fileTreeText);
+        let systemPrompt = SYSTEM_PROMPT.replace('{{filesText}}', filesText).replace('{{fileTreeText}}', fileTreeText);
+        
+        // Add language-specific instructions if Arabic
+        if (isQueryArabic || userLanguage === 'ar-SA') {
+            systemPrompt += `
+
+## LANGUAGE INSTRUCTIONS:
+- The user's request is in Arabic. You should understand and process Arabic requirements.
+- When generating the blueprint, consider Arabic language support if the user requests an Arabic application.
+- For Arabic applications, ensure RTL (right-to-left) layout support is included in the design.
+- Use appropriate Arabic-friendly fonts and text direction in your recommendations.`;
+        }
         const systemPromptMessage = createSystemMessage(generalSystemPromptBuilder(systemPrompt, {
             query,
             templateDetails,

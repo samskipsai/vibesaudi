@@ -36,6 +36,7 @@ export const users = sqliteTable('users', {
     preferences: text('preferences', { mode: 'json' }).default('{}'),
     theme: text('theme', { enum: ['light', 'dark', 'system'] }).default('system'),
     timezone: text('timezone').default('UTC'),
+    language: text('language').default('en'), // 'en' or 'ar-SA' for Saudi Arabic
     
     // Account Status
     isActive: integer('is_active', { mode: 'boolean' }).default(true),

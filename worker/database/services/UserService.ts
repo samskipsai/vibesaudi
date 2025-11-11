@@ -111,6 +111,7 @@ export class UserService extends BaseService {
             bio?: string;
             avatarUrl?: string;
             timezone?: string;
+            language?: string;
         }
     ): Promise<void> {
         await this.database
@@ -150,6 +151,7 @@ export class UserService extends BaseService {
             displayName?: string;
             bio?: string;
             theme?: 'light' | 'dark' | 'system';
+            language?: string;
         }
     ): Promise<{ success: boolean; message: string }> {
         // Validate username if provided
@@ -203,6 +205,7 @@ export class UserService extends BaseService {
                 displayName: profileData.displayName || undefined,
                 bio: profileData.bio || undefined,
                 theme: profileData.theme || undefined,
+                language: profileData.language || undefined,
                 updatedAt: new Date()
             })
             .where(eq(schema.users.id, userId));

@@ -35,9 +35,11 @@ import { useDragDrop } from '@/hooks/use-drag-drop';
 import { ImageAttachmentPreview } from '@/components/image-attachment-preview';
 import { createAIMessage } from './utils/message-helpers';
 import { ServiceSelection } from './components/service-selection';
+import { useTranslation } from 'react-i18next';
 import type { ServicePreferences } from 'worker/services/platform-services/PlatformServicesManager';
 
 export default function Chat() {
+	const { t } = useTranslation();
 	const { chatId: urlChatId } = useParams();
 
 	const [searchParams] = useSearchParams();
@@ -720,10 +722,10 @@ export default function Chat() {
 								disabled={isChatDisabled}
 								placeholder={
 									isChatDisabled
-										? 'Please wait for blueprint completion...'
+										? t('chat.placeholder.waiting')
 										: isRunning
-											? 'Chat with AI while generating...'
-											: 'Ask a follow up...'
+											? t('chat.placeholder.generating')
+											: t('chat.placeholder.followUp')
 								}
 								rows={1}
 								className="w-full bg-bg-2 border border-text-primary/10 rounded-xl px-3 pr-20 py-2 text-sm outline-none focus:border-white/20 drop-shadow-2xl text-text-primary placeholder:!text-text-primary/50 disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto no-scrollbar min-h-[36px] max-h-[120px]"

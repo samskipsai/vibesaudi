@@ -1,7 +1,15 @@
 import { ConversationalResponseType } from "../schemas";
 import { createAssistantMessage, createUserMessage, createMultiModalUserMessage, MessageRole, mapImagesInMultiModalMessage } from "../inferutils/common";
 import { executeInference } from "../inferutils/infer";
-import type { ChatCompletionMessageFunctionToolCall } from 'openai/resources';
+// Define type locally to match OpenAI's ChatCompletionMessageFunctionToolCall structure
+type ChatCompletionMessageFunctionToolCall = {
+    id: string;
+    type: 'function';
+    function: {
+        name: string;
+        arguments: string;
+    };
+};
 import { WebSocketMessageResponses } from "../constants";
 import { WebSocketMessageData } from "../../api/websocketTypes";
 import { AgentOperation, OperationOptions, getSystemPromptWithProjectContext } from "../operations/common";
@@ -75,6 +83,21 @@ const RelevantProjectUpdateWebsoketMessages = [
 export type ProjectUpdateType = typeof RelevantProjectUpdateWebsoketMessages[number];
 
 const SYSTEM_PROMPT = `You are Orange, the conversational AI interface for Cloudflare's vibe coding platform.
+
+<COMMUNICATION>
+- BE DIRECT AND CONCISE: Keep all explanations brief and to the point. Avoid verbose explanations unless absolutely necessary for clarity.
+- MINIMIZE CONVERSATION: Focus on action over explanation. State what you're doing in 1-2 sentences max, then do it.
+- AVOID LENGTHY DESCRIPTIONS: Don't explain every step or decision unless the user specifically asks for details.
+- GET TO THE POINT: Skip unnecessary context and background information.
+- Be conversational but professional.
+- Refer to the USER in the second person and yourself in the first person.
+</COMMUNICATION>
+
+<TASK_COMPLETION_PRINCIPLE>
+KNOW WHEN TO STOP: Once you have successfully queued the user's request and provided a brief acknowledgment, stop.
+- Do not provide lengthy explanations or additional suggestions unless asked.
+- After queueing a request, confirm briefly and end the response.
+</TASK_COMPLETION_PRINCIPLE>
 
 ## YOUR ROLE (CRITICAL - READ CAREFULLY):
 **INTERNALLY**: You are an interface between the user and the AI development agent. When users request changes, you use the \`queue_request\` tool to relay those requests to the actual coding agent that implements them.
@@ -226,7 +249,9 @@ function buildUserMessageWithContext(userMessage: string, errors: RuntimeError[]
 async function prepareMessagesForInference(env: Env, messages: ConversationMessage[]) : Promise<ConversationMessage[]> {
     // For each multimodal image, convert the image to base64 data url
     const processedMessages = await Promise.all(messages.map(m => {
-        return mapImagesInMultiModalMessage(structuredClone(m), async (c) => {
+        // structuredClone is available in Cloudflare Workers runtime
+        const clonedMessage = (globalThis as any).structuredClone(m) as ConversationMessage;
+        return mapImagesInMultiModalMessage(clonedMessage, async (c) => {
             let url = c.image_url.url;
             if (url.includes('base64,')) {
                 return c;
@@ -255,14 +280,36 @@ export class UserConversationProcessor extends AgentOperation<UserConversationIn
     async execute(inputs: UserConversationInputs, options: OperationOptions): Promise<UserConversationOutputs> {
         const { env, logger, context, agent } = options;
         const { userMessage, conversationState, errors, images, projectUpdates } = inputs;
+        
+        // Detect language from user message
+        const { detectLanguage, isArabic } = await import('../../utils/language-detection');
+        const detectedLanguage = detectLanguage(userMessage);
+        const isUserMessageArabic = isArabic(userMessage);
+        
         logger.info("Processing user message", { 
             messageLength: inputs.userMessage.length,
+            detectedLanguage,
+            isArabic: isUserMessageArabic,
             hasImages: !!images && images.length > 0,
             imageCount: images?.length || 0
         });
 
         try {
-            const systemPromptMessages = getSystemPromptWithProjectContext(SYSTEM_PROMPT, context, CodeSerializerType.SIMPLE);
+            // Add language-specific instructions to system prompt
+            let systemPrompt = SYSTEM_PROMPT;
+            if (isUserMessageArabic || detectedLanguage === 'ar-SA') {
+                systemPrompt += `
+
+## LANGUAGE INSTRUCTIONS (CRITICAL):
+- The user is writing in Arabic. You MUST respond in Saudi Arabic dialect (اللهجة السعودية).
+- Use Saudi dialect markers like: "إيش" instead of "ماذا", "وين" instead of "أين", "كيفك" instead of "كيف حالك"
+- Use informal Saudi expressions naturally: "يالله", "الله يعطيك العافية", "إن شاء الله"
+- Keep the same conversational, first-person style but in Saudi Arabic
+- If the user writes in Arabic, always respond in Arabic. Never switch to English unless explicitly asked.
+- Maintain the same helpful, developer persona but in Saudi dialect`;
+            }
+            
+            const systemPromptMessages = getSystemPromptWithProjectContext(systemPrompt, context, CodeSerializerType.SIMPLE);
             
             // Create user message with optional images for inference
             const userPromptForInference = buildUserMessageWithContext(userMessage, errors, projectUpdates, true);

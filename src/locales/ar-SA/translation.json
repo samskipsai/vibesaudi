@@ -1,0 +1,80 @@
+{
+	"common": {
+		"loading": "جاري التحميل...",
+		"error": "خطأ",
+		"success": "نجح",
+		"cancel": "إلغاء",
+		"save": "حفظ",
+		"delete": "حذف",
+		"edit": "تعديل",
+		"close": "إغلاق",
+		"submit": "إرسال",
+		"confirm": "تأكيد",
+		"back": "رجوع",
+		"next": "التالي",
+		"previous": "السابق",
+		"upload": "رفع",
+		"download": "تحميل",
+		"search": "بحث",
+		"filter": "تصفية",
+		"settings": "الإعدادات",
+		"profile": "الملف الشخصي",
+		"logout": "تسجيل الخروج",
+		"login": "تسجيل الدخول",
+		"register": "التسجيل",
+		"language": "اللغة"
+	},
+	"home": {
+		"title": "إيش نبني اليوم؟",
+		"placeholder": "اصنع {{phrase}}",
+		"dropImages": "اسحب الصور هنا",
+		"createApp": "إنشاء تطبيق",
+		"placeholderPhrases": {
+			"todo": "تطبيق قائمة مهام",
+			"f1": "لعبة فانتازي F1",
+			"finance": "متتبع المالية الشخصية"
+		}
+	},
+	"chat": {
+		"placeholder": {
+			"waiting": "انتظر حتى يكتمل المخطط...",
+			"generating": "تحدث مع الذكاء الاصطناعي أثناء التوليد...",
+			"followUp": "اسأل متابعة..."
+		},
+		"uploadImage": "رفع صورة",
+		"send": "إرسال",
+		"thinking": "يفكر..."
+	},
+	"auth": {
+		"welcomeBack": "مرحباً بعودتك",
+		"signIn": "سجل دخول {{context}}",
+		"createAccount": "إنشاء حساب",
+		"joinToStart": "انضم لتبدأ ببناء تطبيقات رائعة",
+		"signInToSave": "سجل دخول لحفظ تطبيقاتك والوصول إلى مساحة العمل",
+		"authRequired": "المصادقة مطلوبة لهذا الإجراء",
+		"signInWith": "سجل دخول بـ {{provider}}",
+		"or": "أو",
+		"email": "البريد الإلكتروني",
+		"password": "كلمة المرور",
+		"forgotPassword": "نسيت كلمة المرور؟",
+		"dontHaveAccount": "ليس لديك حساب؟",
+		"alreadyHaveAccount": "لديك حساب بالفعل؟",
+		"signUp": "سجل",
+		"signInButton": "تسجيل الدخول"
+	},
+	"settings": {
+		"title": "الإعدادات",
+		"general": "عام",
+		"appearance": "المظهر",
+		"language": "اللغة",
+		"preferences": "التفضيلات"
+	},
+	"errors": {
+		"generic": "حدث خطأ ما",
+		"network": "خطأ في الشبكة. يرجى التحقق من اتصالك.",
+		"unauthorized": "تحتاج إلى تسجيل الدخول للمتابعة",
+		"notFound": "غير موجود",
+		"serverError": "خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً."
+	}
+}
+
