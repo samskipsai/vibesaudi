@@ -613,6 +613,7 @@ class ApiClient {
 		bio?: string;
 		timezone?: string;
 		theme?: 'light' | 'dark' | 'system';
+		language?: string;
 	}): Promise<ApiResponse<ProfileUpdateData>> {
 		return this.request<ProfileUpdateData>('/api/user/profile', {
 			method: 'PUT',
