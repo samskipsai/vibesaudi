@@ -44,6 +44,9 @@ export default defineConfig({
 			// 'path': 'path-browserify',
 			// Add this line to fix the 'debug' package issue
 			debug: 'debug/src/browser',
+			// Replace Node.js-specific packages with Workers-compatible stubs
+			'mime-types': path.resolve(__dirname, './worker/utils/mime-types-stub.ts'),
+			'path': path.resolve(__dirname, './worker/utils/path-stub.ts'),
 			// "@": path.resolve(__dirname, "./src"),
 			'@': path.resolve(__dirname, './src'),
             'shared': path.resolve(__dirname, './shared'),
