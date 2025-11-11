@@ -72,7 +72,7 @@ export class FileProcessing {
         generatedFilesMap: Record<string, FileOutputType>
     ): string {
         // First search in the current phase
-        const phaseFile = phase.files.find(file => file.path === filePath);
+        const phaseFile = phase.files?.find(file => file.path === filePath);
         if (phaseFile?.purpose) {
             return phaseFile.purpose;
         }

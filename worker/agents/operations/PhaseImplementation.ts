@@ -484,7 +484,7 @@ export class PhaseImplementationOperation extends AgentOperation<PhaseImplementa
         const { phase, issues, userContext } = inputs;
         const { env, logger, context } = options;
         
-        logger.info(`Generating files for phase: ${phase.name}`, phase.description, "files:", phase.files.map(f => f.path));
+        logger.info(`Generating files for phase: ${phase.name}`, phase.description, "files:", phase.files?.map(f => f.path) || []);
     
         // Notify phase start
         const codeGenerationFormat = new SCOFFormat();
