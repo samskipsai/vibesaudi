@@ -1385,7 +1385,7 @@ export class SandboxSdkClient extends BaseSandboxService {
         
             for (const readResult of readResults) {
                 if (readResult.status === 'fulfilled') {
-                    const { result, filePath } = readResult.value;
+                    const { result, filePath, error } = readResult.value;
                     if (result && result.success) {
                         files.push({
                             filePath: filePath,
@@ -1394,7 +1394,7 @@ export class SandboxSdkClient extends BaseSandboxService {
                         
                         this.logger.info('File read successfully', { filePath });
                     } else {
-                        const errorMsg = readResult.error || 'File read failed';
+                        const errorMsg = error ? String(error) : 'File read failed';
                         this.logger.error('File read failed', { 
                             filePath, 
                             templateOrInstanceId,
@@ -1402,14 +1402,15 @@ export class SandboxSdkClient extends BaseSandboxService {
                         });
                         errors.push({
                             file: filePath,
-                            error: errorMsg || 'Failed to read file'
+                            error: errorMsg
                         });
                     }
                 } else {
-                    this.logger.error(`Promise rejected for file read`);
+                    const rejectionReason = readResult.reason instanceof Error ? readResult.reason.message : String(readResult.reason);
+                    this.logger.error(`Promise rejected for file read: ${rejectionReason}`);
                     errors.push({
                         file: 'unknown',
-                        error: 'Promise rejected'
+                        error: `Promise rejected: ${rejectionReason}`
                     });
                 }
             }
