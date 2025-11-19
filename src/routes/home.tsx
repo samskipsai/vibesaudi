@@ -133,9 +133,10 @@ export default function Home() {
 	}, [currentPlaceholderText, currentPlaceholderPhraseIndex, isPlaceholderTyping, placeholderPhrases]);
 
 	const discoverLinkRef = useRef<HTMLDivElement>(null);
+    const { i18n } = useTranslation();
 
 	return (
-		<div className="relative flex flex-col items-center size-full">
+		<div className="relative flex flex-col items-center size-full" dir={i18n.language === 'ar-SA' ? 'rtl' : 'ltr'}>
 			{/* Dotted background pattern - extends to full viewport */}
 			<div className="fixed inset-0 text-accent z-0 opacity-20 pointer-events-none">
 				<svg width="100%" height="100%">

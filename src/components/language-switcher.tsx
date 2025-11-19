@@ -18,8 +18,9 @@ export function LanguageSwitcher() {
 		if (i18n.language !== savedLanguage) {
 			i18n.changeLanguage(savedLanguage);
 		}
-		const dir = savedLanguage === 'ar-SA' ? 'rtl' : 'ltr';
-		document.documentElement.dir = dir;
+		// document.documentElement.dir = savedLanguage === 'ar-SA' ? 'rtl' : 'ltr';
+		// Global RTL is disabled per user request, except for specific pages (Home)
+		document.documentElement.dir = 'ltr';
 		document.documentElement.lang = savedLanguage;
 	}, [i18n]);
 
@@ -27,7 +28,9 @@ export function LanguageSwitcher() {
 		await i18n.changeLanguage(lng);
 		
 		// Update document direction
-		document.documentElement.dir = lng === 'ar-SA' ? 'rtl' : 'ltr';
+		// document.documentElement.dir = lng === 'ar-SA' ? 'rtl' : 'ltr';
+		// Global RTL is disabled per user request
+		document.documentElement.dir = 'ltr';
 		document.documentElement.lang = lng;
 		
 		// Save to localStorage

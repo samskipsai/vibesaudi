@@ -14,8 +14,14 @@ function sanitizeMessageForDisplay(message: string): string {
 	return message.replace(/<system_context>[\s\S]*?<\/system_context>\n/gi, '').trim();
 }
 
+function isArabicText(text: string): boolean {
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return arabicRegex.test(text);
+}
+
 export function UserMessage({ message }: { message: string }) {
 	const sanitizedMessage = sanitizeMessageForDisplay(message);
+	const isArabic = isArabicText(sanitizedMessage);
 	
 	return (
 		<div className="flex gap-3">
@@ -24,9 +30,11 @@ export function UserMessage({ message }: { message: string }) {
 					<span className="text-xs">U</span>
 				</div>
 			</div>
-			<div className="flex flex-col gap-2 min-w-0">
+			<div className="flex flex-col gap-2 min-w-0 w-full">
 				<div className="font-medium text-text-50">You</div>
-				<Markdown className="text-text-primary/80">{sanitizedMessage}</Markdown>
+				<div dir={isArabic ? 'rtl' : 'ltr'} className={clsx(isArabic && "text-right")}>
+					<Markdown className="text-text-primary/80">{sanitizedMessage}</Markdown>
+				</div>
 			</div>
 		</div>
 	);
@@ -42,13 +50,14 @@ export function AIMessage({
 	toolEvents?: ToolEvent[];
 }) {
 	const sanitizedMessage = sanitizeMessageForDisplay(message);
+	const isArabic = isArabicText(sanitizedMessage);
 	
 	return (
 		<div className="flex gap-3">
 			<div className="align-text-top pl-1">
 				<AIAvatar className="size-6 text-orange-500" />
 			</div>
-			<div className="flex flex-col gap-2 min-w-0">
+			<div className="flex flex-col gap-2 min-w-0 w-full">
 				<div className="font-mono font-medium text-text-50">Orange</div>
 				{toolEvents && toolEvents.length > 0 && (
 					<div className="mb-1.5 flex flex-col gap-1">
@@ -73,9 +82,11 @@ export function AIMessage({
 						))}
 					</div>
 				)}
-				<Markdown className={clsx('a-tag', isThinking ? 'animate-pulse' : '')}>
-					{sanitizedMessage}
-				</Markdown>
+				<div dir={isArabic ? 'rtl' : 'ltr'} className={clsx(isArabic && "text-right")}>
+					<Markdown className={clsx('a-tag', isThinking ? 'animate-pulse' : '')}>
+						{sanitizedMessage}
+					</Markdown>
+				</div>
 			</div>
 		</div>
 	);
