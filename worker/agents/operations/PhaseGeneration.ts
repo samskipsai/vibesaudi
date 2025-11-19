@@ -217,7 +217,7 @@ export class PhaseGenerationOperation extends AgentOperation<PhaseGenerationInpu
                 ? ` and ${userContext.images.length} image(s)`
                 : "";
             
-            logger.info(`Generating next phase ${suggestionsInfo}${imagesInfo}`);
+            logger.info(`Generating next phase ${suggestionsInfo}${imagesInfo}`, { language: userLanguage });
     
             // Create user message with optional images
             const userPrompt = userPromptFormatter(issues, userContext?.suggestions, isUserSuggestedPhase);
