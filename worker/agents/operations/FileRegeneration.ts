@@ -1,5 +1,5 @@
 import { FileGenerationOutputType } from '../schemas';
-import { AgentOperation, OperationOptions } from '../operations/common';
+import { AgentOperation, OperationOptions, getLanguageInstructions } from '../operations/common';
 import { RealtimeCodeFixer } from '../assistants/realtimeCodeFixer';
 import { FileOutputType } from '../schemas';
 import { AGENT_CONFIG } from '../inferutils/config';
@@ -145,8 +145,12 @@ export class FileRegenerationOperation extends AgentOperation<FileRegenerationIn
         options: OperationOptions
     ): Promise<FileGenerationOutputType> {
         try {
+            const userLanguage = options.context.language;
+            const languageInstructions = getLanguageInstructions(userLanguage);
+            const finalSystemPrompt = SYSTEM_PROMPT + languageInstructions;
+            
             // Use realtime code fixer to fix the file with enhanced surgical fix prompts
-            const realtimeCodeFixer = new RealtimeCodeFixer(options.env, options.inferenceContext, false, undefined, AGENT_CONFIG.fileRegeneration, SYSTEM_PROMPT, USER_PROMPT);
+            const realtimeCodeFixer = new RealtimeCodeFixer(options.env, options.inferenceContext, false, undefined, AGENT_CONFIG.fileRegeneration, finalSystemPrompt, USER_PROMPT);
             const fixedFile = await realtimeCodeFixer.run(
                 inputs.file, {
                     previousFiles: options.context.allFiles,

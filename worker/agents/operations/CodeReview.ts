@@ -6,7 +6,7 @@ import { executeInference } from '../inferutils/infer';
 import { generalSystemPromptBuilder, issuesPromptFormatter, PROMPT_UTILS } from '../prompts';
 import { TemplateRegistry } from '../inferutils/schemaFormatters';
 import { z } from 'zod';
-import { AgentOperation, OperationOptions } from '../operations/common';
+import { AgentOperation, OperationOptions, getLanguageInstructions } from '../operations/common';
 
 export interface CodeReviewInputs {
     issues: IssueReport
@@ -206,6 +206,7 @@ export class CodeReviewOperation extends AgentOperation<CodeReviewInputs, CodeRe
     ): Promise<CodeReviewOutputType> {
         const { issues } = inputs;
         const { env, logger, context } = options;
+        const userLanguage = context.language;
         
         logger.info("Performing code review");
         logger.info("Running static code analysis via linting...");
@@ -226,8 +227,9 @@ export class CodeReviewOperation extends AgentOperation<CodeReviewInputs, CodeRe
         // Get files context
         const filesContext = getFilesContext(context);
 
+        const languageInstructions = getLanguageInstructions(userLanguage);
         const messages = [
-            createSystemMessage(generalSystemPromptBuilder(SYSTEM_PROMPT, {
+            createSystemMessage(generalSystemPromptBuilder(SYSTEM_PROMPT + languageInstructions, {
                 query: context.query,
                 blueprint: context.blueprint,
                 templateDetails: context.templateDetails,

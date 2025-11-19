@@ -208,6 +208,7 @@ export class PhaseGenerationOperation extends AgentOperation<PhaseGenerationInpu
     ): Promise<PhaseConceptGenerationSchemaType> {
         const { issues, userContext, isUserSuggestedPhase } = inputs;
         const { env, logger, context } = options;
+        const userLanguage = context.language;
         try {
             const suggestionsInfo = userContext?.suggestions && userContext.suggestions.length > 0
                 ? `with ${userContext.suggestions.length} user suggestions`

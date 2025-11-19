@@ -1,7 +1,7 @@
 import { createSystemMessage, createUserMessage } from '../inferutils/common';
 import { executeInference } from '../inferutils/infer';
 import { PROMPT_UTILS } from '../prompts';
-import { AgentOperation, OperationOptions } from '../operations/common';
+import { AgentOperation, OperationOptions, getLanguageInstructions } from '../operations/common';
 import { FileOutputType, PhaseConceptType } from '../schemas';
 import { SCOFFormat } from '../output-formats/streaming-formats/scof';
 import { CodeIssue } from '../../services/sandbox/sandboxTypes';
@@ -103,12 +103,14 @@ export class FastCodeFixerOperation extends AgentOperation<FastCodeFixerInputs, 
         options: OperationOptions
     ): Promise<FileOutputType[]> {
         const { query, issues, allFiles, allPhases } = inputs;
-        const { env, logger } = options;
+        const { env, logger, context } = options;
+        const userLanguage = context.language;
         
         logger.info(`Fixing issues for ${allFiles.length} files`);
 
         const userPrompt = userPromptFormatter(query, issues, allFiles, allPhases);
-        const systemPrompt = SYSTEM_PROMPT;
+        const languageInstructions = getLanguageInstructions(userLanguage);
+        const systemPrompt = SYSTEM_PROMPT + languageInstructions;
         const codeGenerationFormat = new SCOFFormat();
 
         const messages = [

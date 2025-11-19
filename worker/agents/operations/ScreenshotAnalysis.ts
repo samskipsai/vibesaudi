@@ -3,7 +3,7 @@ import { createSystemMessage, createMultiModalUserMessage } from '../inferutils/
 import { executeInference } from '../inferutils/infer';
 import { PROMPT_UTILS } from '../prompts';
 import { ScreenshotData } from '../core/types';
-import { AgentOperation, OperationOptions } from './common';
+import { AgentOperation, OperationOptions, getLanguageInstructions } from './common';
 import { OperationError } from '../utils/operationError';
 
 export interface ScreenshotAnalysisInput {
@@ -76,6 +76,7 @@ export class ScreenshotAnalysisOperation extends AgentOperation<ScreenshotAnalys
     ): Promise<ScreenshotAnalysisType> {
         const { screenshotData } = input;
         const { env, context, logger } = options;
+        const userLanguage = context.language;
         try {
             logger.info('Analyzing screenshot from preview', {
                 url: screenshotData.url,
@@ -89,8 +90,9 @@ export class ScreenshotAnalysisOperation extends AgentOperation<ScreenshotAnalys
             }
 
             // Create multi-modal messages
+            const languageInstructions = getLanguageInstructions(userLanguage);
             const messages = [
-                createSystemMessage(SYSTEM_PROMPT),
+                createSystemMessage(SYSTEM_PROMPT + languageInstructions),
                 createMultiModalUserMessage(
                     userPromptFormatter(screenshotData, context.blueprint),
                     screenshotData.screenshot, // The base64 data URL or image URL

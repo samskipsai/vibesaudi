@@ -483,13 +483,14 @@ export class PhaseImplementationOperation extends AgentOperation<PhaseImplementa
     ): Promise<PhaseImplementationOutputs> {
         const { phase, issues, userContext } = inputs;
         const { env, logger, context } = options;
+        const userLanguage = context.language;
         
-        logger.info(`Generating files for phase: ${phase.name}`, phase.description, "files:", phase.files?.map(f => f.path) || []);
+        logger.info(`Generating files for phase: ${phase.name}`, phase.description, "files:", phase.files?.map(f => f.path) || [], "language:", userLanguage);
     
         // Notify phase start
         const codeGenerationFormat = new SCOFFormat();
         // Build messages for generation
-        const messages = getSystemPromptWithProjectContext(SYSTEM_PROMPT, context, CodeSerializerType.SCOF);
+        const messages = getSystemPromptWithProjectContext(SYSTEM_PROMPT, context, CodeSerializerType.SCOF, userLanguage);
         
         // Create user message with optional images
         const userPrompt = userPromptFormatter(phase, issues, userContext?.suggestions) + codeGenerationFormat.formatInstructions();
@@ -607,11 +608,12 @@ export class PhaseImplementationOperation extends AgentOperation<PhaseImplementa
 
     async generateReadme(options: OperationOptions): Promise<FileOutputType> {
         const { env, logger, context } = options;
+        const userLanguage = context.language;
         logger.info("Generating README.md for the project");
 
         try {
             let readmePrompt = README_GENERATION_PROMPT;
-            const messages = [...getSystemPromptWithProjectContext(SYSTEM_PROMPT, context, CodeSerializerType.SCOF), createUserMessage(readmePrompt)];
+            const messages = [...getSystemPromptWithProjectContext(SYSTEM_PROMPT, context, CodeSerializerType.SCOF, userLanguage), createUserMessage(readmePrompt)];
 
             const results = await executeInference({
                 env: env,

@@ -19,7 +19,8 @@ export class GenerationContext {
         public readonly allFiles: FileState[],
         public readonly generatedPhases: PhaseState[],
         public readonly commandsHistory: string[],
-        public readonly platformServices?: PlatformServices
+        public readonly platformServices?: PlatformServices,
+        public readonly language?: string
     ) {
         // Freeze to ensure immutability
         Object.freeze(this);
@@ -52,7 +53,8 @@ export class GenerationContext {
             allFiles,
             state.generatedPhases,
             state.commandsHistory || [],
-            state.platformServices
+            state.platformServices,
+            state.language
         );
     }
 
