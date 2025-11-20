@@ -265,7 +265,8 @@ These are the instructions and quality standards that must be followed to implem
     •   **BUG FREE CODE:** Write good quality bug free code of the highest standards. Ensure all syntax is correct and all imports are valid. 
     •   **Please thoroughly review the tailwind.config.js file and existing styling CSS files, and make sure you use only valid defined Tailwind classes in your CSS. Using a class that is not defined in tailwind.config.js will lead to a crash which is very bad.**
     •   **Ensure there are no syntax errors or typos such as \`border-border\` (undefined) in tailwind instead of \`border\` (real class)**
-    •   **You are not permitted to directly interfere or overwrite any of the core config files such as package.json, linting configs, tsconfig etc. except some exceptions**
+    •   **CRITICAL: If tsconfig.json doesn't exist, you MUST create it in Phase 1 with proper config (see Phase Generation for template)**
+    •   **You are not permitted to modify core config files like package.json or linting configs, except tsconfig.json if missing**
     •   **Refrain from writing any SVG from scratch. Use existing public svgs or from an asset library installed in the project. Do not use any asset libraries that are not already installed in the project.**
     •   **Don't have other exports with react components in the same file, move the exports to a separate file. Use a named function for your React component. Rename your component name to pascal case.**
     •   **Always review the whole codebase to identify and fix UI issues (spacing, alignment, margins, paddings, etc.), syntax errors, typos, and logical flaws**

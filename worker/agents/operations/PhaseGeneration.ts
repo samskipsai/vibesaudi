@@ -64,7 +64,29 @@ PRESERVE EXISTING FUNCTIONALITY: When planning phases, maintain all previously w
     Follow the <PHASES GENERATION STRATEGY> as your reference policy for building and delivering projects.
     
     **Configuration File Guidelines:**
-    - Core config files are locked: package.json, tsconfig.json, wrangler.jsonc (already configured)
+    - Core config files are locked: package.json, wrangler.jsonc (already configured)
+    - You MUST create tsconfig.json in Phase 1 if template doesn't have it. Use this config for React+Vite:
+      {
+        "compilerOptions": {
+          "target": "ES2020",
+          "useDefineForClassFields": true,
+          "lib": ["ES2020", "DOM", "DOM.Iterable"],
+          "module": "ESNext",
+          "skipLibCheck": true,
+          "types": [],
+          "moduleResolution": "bundler",
+          "allowImportingTsExtensions": true,
+          "resolveJsonModule": true,
+          "isolatedModules": true,
+          "noEmit": true,
+          "jsx": "react-jsx",
+          "strict": true,
+          "noUnusedLocals": true,
+          "noUnusedParameters": true,
+          "noFallthroughCasesInSwitch": true
+        },
+        "include": ["src"]
+      }
     - You may modify: tailwind.config.js, vite.config.js (if needed for styling/build)
     
     **Visual Assets - Use These Approaches:**
