@@ -78,7 +78,7 @@ export function handleRateLimitError(
     ) => void
 ): ChatMessage {
     // Check if this is an AI inference rate limit with structured data
-    const isAIInference = rateLimitError.limitType === 'llm_calls' && rateLimitError.limit && rateLimitError.period;
+    const isAIInference = rateLimitError.limitType === 'llmCalls' && rateLimitError.limit && rateLimitError.period;
     
     let displayMessage = rateLimitError.message;
     
