@@ -159,6 +159,11 @@
 		@apply cursor-pointer;
 	}
 	
+	/* Arabic font support */
+	:lang(ar), :lang(ar-SA), [lang="ar"], [lang="ar-SA"] {
+		font-family: 'Noto Sans Arabic', 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+	}
+	
 	/* RTL Support */
 	[dir="rtl"] {
 		direction: rtl;
@@ -186,7 +191,7 @@
 
 @theme {
 	--font-sans:
-		'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+		'Inter', 'Segoe UI', 'Tahoma', 'Arial', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
 		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
 	--color-brand: #0092b8;

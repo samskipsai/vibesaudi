@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { generateId } from '@/utils/id-generator';
 import type { RateLimitError, ConversationMessage } from '@/api-types';
+import i18n from '@/lib/i18n';
 
 export type ToolEvent = {
     name: string;
@@ -76,10 +77,35 @@ export function handleRateLimitError(
         rawMessage?: unknown
     ) => void
 ): ChatMessage {
+    // Check if this is an AI inference rate limit with structured data
+    const isAIInference = rateLimitError.limitType === 'llm_calls' && rateLimitError.limit && rateLimitError.period;
+    
     let displayMessage = rateLimitError.message;
     
+    // Try to use translated message if available
+    if (isAIInference) {
+        const hours = Math.floor((rateLimitError.period || 3600) / 3600);
+        const dailyLimit = rateLimitError.limit ? rateLimitError.limit * (24 / hours) : 400;
+        
+        // Use translation with parameters
+        displayMessage = i18n.t('errors.rateLimit.aiInference', {
+            limit: rateLimitError.limit || 100,
+            hours: hours,
+            dailyLimit: dailyLimit,
+            proCost: 4,
+            flashCost: 1,
+            liteCost: 0
+        });
+    }
+    
+    // Add suggestions if available
     if (rateLimitError.suggestions && rateLimitError.suggestions.length > 0) {
-        displayMessage += `\n\n💡 Suggestions:\n${rateLimitError.suggestions.map(s => `• ${s}`).join('\n')}`;
+        const suggestionText = i18n.t('errors.rateLimit.suggestion', {
+            proCost: 4,
+            flashCost: 1,
+            liteCost: 0
+        });
+        displayMessage += `\n\n${suggestionText}`;
     }
     
     toast.error(displayMessage);
@@ -95,7 +121,7 @@ export function handleRateLimitError(
     
     return createAIMessage(
         `rate_limit_${Date.now()}`,
-        `⏱️ ${displayMessage}`
+        i18n.t('errors.rateLimit.title') + ' ' + displayMessage
     );
 }
 
