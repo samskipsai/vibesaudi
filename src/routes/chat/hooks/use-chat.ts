@@ -67,6 +67,7 @@ export function useChat({
 	onDebugMessage?: (type: 'error' | 'warning' | 'info' | 'websocket', message: string, details?: string, source?: string, messageType?: string, rawMessage?: unknown) => void;
 	onTerminalMessage?: (log: { id: string; content: string; type: 'command' | 'stdout' | 'stderr' | 'info' | 'error' | 'warn' | 'debug'; timestamp: number; source?: string }) => void;
 }) {
+	const { t } = useTranslation();
 	const connectionStatus = useRef<'idle' | 'connecting' | 'connected' | 'failed' | 'retrying'>('idle');
 	const retryCount = useRef(0);
 	const maxRetries = 5;
@@ -482,13 +483,13 @@ export function useChat({
 					};
 
 					let startedBlueprintStream = false;
-					sendMessage(createAIMessage('main', "Sure, let's get started. Bootstrapping the project first...", true));
+					sendMessage(createAIMessage('main', t('chat.messages.bootstrapping'), true));
 
 					for await (const obj of ndjsonStream(response.stream)) {
                         logger.debug('Received chunk from server:', obj);
 						if (obj.chunk) {
 							if (!startedBlueprintStream) {
-								sendMessage(createAIMessage('main', 'Blueprint is being generated...', true));
+								sendMessage(createAIMessage('main', t('chat.messages.blueprintGenerating'), true));
 								logger.info('Blueprint stream has started');
 								setIsBootstrapping(false);
 								setIsGeneratingBlueprint(true);
@@ -522,7 +523,7 @@ export function useChat({
 
 					updateStage('blueprint', { status: 'completed' });
 					setIsGeneratingBlueprint(false);
-					sendMessage(createAIMessage('main', 'Blueprint generation complete. Now starting the code generation...', true));
+					sendMessage(createAIMessage('main', t('chat.messages.blueprintComplete'), true));
 
 					// Connect to WebSocket
 					logger.debug('connecting to ws with created id');

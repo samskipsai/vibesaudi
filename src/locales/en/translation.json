@@ -43,7 +43,13 @@
 		},
 		"uploadImage": "Upload image",
 		"send": "Send",
-		"thinking": "Thinking..."
+		"thinking": "Thinking...",
+		"messages": {
+			"bootstrapping": "Sure, let's get started. Bootstrapping the project first...",
+			"blueprintGenerating": "Blueprint is being generated...",
+			"blueprintComplete": "Blueprint generation complete. Now starting the code generation...",
+			"creatingBlueprint": "Bootstrapping complete, now creating a blueprint for you..."
+		}
 	},
 	"auth": {
 		"welcomeBack": "Welcome back",

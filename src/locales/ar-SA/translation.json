@@ -43,7 +43,13 @@
 		},
 		"uploadImage": "رفع صورة",
 		"send": "إرسال",
-		"thinking": "يفكر..."
+		"thinking": "يفكر...",
+		"messages": {
+			"bootstrapping": "تمام، يالله نبدأ. بنجهز المشروع أولاً...",
+			"blueprintGenerating": "المخطط قاعد يتولد...",
+			"blueprintComplete": "المخطط خلص. الحين بنبدأ نكتب الكود...",
+			"creatingBlueprint": "التجهيز خلص، الحين بنسوي المخطط لك..."
+		}
 	},
 	"auth": {
 		"welcomeBack": "مرحباً بعودتك",

@@ -431,7 +431,7 @@ export default function Chat() {
 			sendAiMessage(
 				createAIMessage(
 					'creating-blueprint',
-					'Bootstrapping complete, now creating a blueprint for you...',
+					t('chat.messages.creatingBlueprint'),
 					true,
 				),
 			);
