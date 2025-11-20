@@ -45,9 +45,54 @@ async function handleUserAppRequest(request: Request, env: Env): Promise<Respons
 	const { hostname } = url;
 	logger.info(`Handling user app request for: ${hostname}`);
 
+	// IMPORTANT: Check for WebSocket upgrade requests FIRST
+	// WebSocket requests cannot be serialized across Durable Object RPC boundaries
+	// See: https://github.com/cloudflare/workerd/issues/2319
+	const upgradeHeader = request.headers.get('Upgrade');
+	if (upgradeHeader?.toLowerCase() === 'websocket') {
+		logger.info(`WebSocket upgrade request detected for ${hostname} - WebSockets are not supported in sandbox preview mode`);
+		
+		// Return a 400 Bad Request for WebSocket upgrade attempts in preview
+		// User apps that use WebSockets will need to be deployed to work properly
+		return new Response('WebSocket connections are not supported in sandbox preview mode. Please deploy your application to use WebSocket features.', {
+			status: 400,
+			statusText: 'WebSocket Not Supported in Preview',
+			headers: {
+				'Content-Type': 'text/plain',
+				'X-Preview-Type': 'websocket-not-supported',
+				'X-Deployment-Required': 'true'
+			}
+		});
+	}
+
 	// 1. Attempt to proxy to a live development sandbox.
 	// proxyToSandbox doesn't consume the request body on a miss, so no clone is needed here.
-	const sandboxResponse = await proxyToSandbox(request, env);
+	let sandboxResponse: Response | null = null;
+	try {
+		sandboxResponse = await proxyToSandbox(request, env);
+	} catch (error: any) {
+		// Catch any unexpected errors during proxying
+		const errorMessage = error?.message || String(error);
+		logger.error(`Error proxying to sandbox for ${hostname}: ${errorMessage}`, error);
+		
+		// If it's still a WebSocket serialization error (shouldn't happen now), handle gracefully
+		if (errorMessage.includes('WebSocket') || errorMessage.includes('serialize')) {
+			logger.warn(`WebSocket serialization error leaked through - this shouldn't happen`);
+			return new Response('Preview temporarily unavailable due to WebSocket connection issue. Please deploy your application.', {
+				status: 503,
+				headers: {
+					'Content-Type': 'text/plain',
+					'X-Preview-Type': 'sandbox-error',
+					'Retry-After': '5',
+					'X-Deployment-Required': 'true'
+				}
+			});
+		}
+		
+		// For other errors, continue to dispatcher fallback
+		sandboxResponse = null;
+	}
+	
 	if (sandboxResponse) {
 		logger.info(`Serving response from sandbox for: ${hostname}`);
 		
