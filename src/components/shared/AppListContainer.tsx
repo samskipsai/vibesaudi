@@ -156,10 +156,12 @@ export const AppListContainer: React.FC<AppListContainerProps> = ({
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <AnimatePresence mode="popLayout">
-          {apps.map(app => (
+          {apps.map((app, index) => (
             <AppCard 
               key={app.id} 
               app={app}
+              index={index}
+              priority={index < 6 ? 'high' : 'low'}
               onClick={onAppClick}
               onToggleFavorite={onToggleFavorite}
               showStats={showStats}

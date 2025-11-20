@@ -179,6 +179,8 @@ interface AppCardProps {
 	showUser?: boolean;
 	showActions?: boolean;
 	className?: string;
+	index?: number;
+	priority?: 'high' | 'low' | 'auto';
 }
 
 const getVisibilityIcon = (visibility: string) => {
@@ -380,9 +382,16 @@ export const AppCard = React.memo<AppCardProps>(
 		showUser = false,
 		showActions = false,
 		className,
+		index = 0,
+		priority = 'auto',
 	}) => {
 		const layoutConfig = getLayoutConfig(showUser, showActions);
 		const deploymentStatus = getDeploymentStatusInfo(app);
+		
+		// Optimize loading for above-the-fold images (first 6 cards)
+		const isAboveFold = index < 6;
+		const imagePriority = priority !== 'auto' ? priority : (index < 3 ? 'high' : 'low');
+		const imageLoading = isAboveFold ? 'eager' : 'lazy';
 
 		const itemVariants = {
 			hidden: { y: 10, opacity: 0 },
@@ -441,8 +450,8 @@ export const AppCard = React.memo<AppCardProps>(
 									'object-cover object-center',
 									'bg-gradient-to-br from-red-50/60 to-red-100/60 dark:from-red-950/15 dark:to-red-900/15',
 								)}
-								loading="lazy"
-								fetchPriority="low"
+								loading={imageLoading as 'lazy' | 'eager'}
+								fetchPriority={imagePriority as 'high' | 'low' | 'auto'}
 								sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 								srcSet={`${app.screenshotUrl} 1x, ${app.screenshotUrl} 1.5x, ${app.screenshotUrl} 2x, ${app.screenshotUrl} 3x`}
 								decoding="async"

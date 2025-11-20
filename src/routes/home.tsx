@@ -137,32 +137,17 @@ export default function Home() {
 
 	return (
 		<div className="relative flex flex-col items-center size-full" dir={i18n.language === 'ar-SA' ? 'rtl' : 'ltr'}>
-			{/* Dotted background pattern - extends to full viewport */}
-			<div className="fixed inset-0 text-accent z-0 opacity-20 pointer-events-none">
-				<svg width="100%" height="100%">
-					<defs>
-						<pattern
-							id=":S2:"
-							viewBox="-6 -6 12 12"
-							patternUnits="userSpaceOnUse"
-							width="12"
-							height="12"
-						>
-							<circle
-								cx="0"
-								cy="0"
-								r="1"
-								fill="currentColor"
-							></circle>
-						</pattern>
-					</defs>
-					<rect
-						width="100%"
-						height="100%"
-						fill="url(#:S2:)"
-					></rect>
-				</svg>
-			</div>
+			{/* Optimized CSS-based dotted background for better LCP - replaces SVG */}
+			<div 
+				className="fixed inset-0 text-accent z-0 opacity-20 pointer-events-none" 
+				style={{
+					backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+					backgroundSize: '12px 12px',
+					willChange: 'auto',
+					containIntrinsicSize: '100vw 100vh',
+					contentVisibility: 'auto'
+				}}
+			/>
 			
 			<LayoutGroup>
 				<div className="rounded-md w-full max-w-2xl overflow-hidden">
@@ -170,10 +155,17 @@ export default function Home() {
 						layout
 						transition={{ layout: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }}
 						className={clsx(
-							"px-6 p-8 flex flex-col items-center z-10",
+							"px-6 p-8 flex flex-col items-center z-10 lcp-optimized",
 							discoverReady ? "mt-48" : "mt-[20vh] sm:mt-[24vh] md:mt-[28vh]"
 						)}>
-						<h1 className="text-shadow-sm text-shadow-red-200 dark:text-shadow-red-900 text-accent font-medium leading-[1.1] tracking-tight text-5xl w-full mb-4 bg-clip-text bg-gradient-to-r from-text-primary to-text-primary/90">
+						<h1 
+							className="text-shadow-sm text-shadow-red-200 dark:text-shadow-red-900 text-accent font-medium leading-[1.1] tracking-tight text-5xl w-full mb-4 bg-clip-text bg-gradient-to-r from-text-primary to-text-primary/90"
+							style={{
+								willChange: 'auto',
+								containIntrinsicSize: 'auto 100px',
+								contentVisibility: 'auto'
+							}}
+						>
 							{t('home.title')}
 						</h1>
 
@@ -294,10 +286,12 @@ export default function Home() {
 									className="grid grid-cols-2 xl:grid-cols-3 gap-6"
 								>
 									<AnimatePresence mode="popLayout">
-										{apps.map(app => (
+										{apps.map((app, index) => (
 											<AppCard
 												key={app.id}
 												app={app}
+												index={index}
+												priority={index < 3 ? 'high' : 'low'}
 												onClick={() => navigate(`/app/${app.id}`)}
 												showStats={true}
 												showUser={true}
